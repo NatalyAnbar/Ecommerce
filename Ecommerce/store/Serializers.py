@@ -38,11 +38,9 @@ class ProductSerializer(TranslationMixin, serializers.ModelSerializer):
     class Meta:
         model = models.Product
         fields = ['id','category','slug','brand','price','name','description',
-                  'uploaded_img','images','name_en', 'name_ar', 'description_en', 
-                  'description_ar']
+                  'uploaded_img','images']
 
     def create(self, validated_data):
-
         # Extract uploaded images and save the new product instance
         images = validated_data.pop('uploaded_img')
         product = models.Product.objects.create(**validated_data)
@@ -50,7 +48,6 @@ class ProductSerializer(TranslationMixin, serializers.ModelSerializer):
         # Save multiple product gallery images sequentially
         for img in images:
             models.ProductImage.objects.create(product=product,img=img)
-
         return product
 
     # Resolve product name dynamically based on language
@@ -67,9 +64,12 @@ class CategorySerializer(TranslationMixin, serializers.ModelSerializer):
     slug = serializers.CharField(read_only=True)
     name = serializers.SerializerMethodField()
 
+    name_en = serializers.CharField(write_only=True)
+    name_ar = serializers.CharField(write_only=True)
+
     class Meta:
         model = models.Category
-        fields = ['id','name','slug','products']
+        fields = ['id','name_en','name_ar','name','slug','products']
 
     # Resolve category name dynamically based on language
     def get_name(self,obj):
