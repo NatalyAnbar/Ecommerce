@@ -26,7 +26,7 @@ def test_anyone_can_list_categories(api_client):
     """Anonymous users can retrieve the category list."""
 
     categories = baker.make(models.Category,_quantity=5)
-    
+
     url = reverse('category-list')
     response = api_client.get(url)
 
@@ -127,6 +127,7 @@ def test_user_with_delete_permission_can_delete_category(api_client,authenticate
     assert not models.Category.objects.filter(id=category.id).exists()
 
 
+@pytest.mark.django_db
 def test_anonymous_user_cannot_delete_category(api_client):
     """Unauthenticated users are rejected when deleting a category."""
 
