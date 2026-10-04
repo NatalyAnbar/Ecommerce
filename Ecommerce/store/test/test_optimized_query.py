@@ -12,6 +12,7 @@ def test_category_list_avoids_n_plus_one_queries(api_client , django_assert_num_
         1. categories
         2. products of those categories (prefetched)
         3. images of those products (prefetched)
+        4. count query from pagination
     """
 
     categories = baker.make(models.Category , _quantity=5)
@@ -23,7 +24,7 @@ def test_category_list_avoids_n_plus_one_queries(api_client , django_assert_num_
 
     url = reverse('category-list')
     
-    with django_assert_num_queries(3):
+    with django_assert_num_queries(4):
         api_client.get(url)
 
 

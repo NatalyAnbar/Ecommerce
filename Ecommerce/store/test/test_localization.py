@@ -4,8 +4,6 @@ from model_bakery import baker
 from store import models
 
     
-
-
 @pytest.mark.django_db
 def test_category_name_follows_accept_language_header(api_client):
     """The localized category name matches the language requested by the client."""
