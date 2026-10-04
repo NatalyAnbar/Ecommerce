@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django_filters',
 
     # Internal Core Subsystems
     'store',
@@ -89,10 +90,20 @@ DATABASES = {
 AUTH_USER_MODEL = 'accounts.User'
 
 
-# Django Rest Framework authentication settings using JWT
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+
+    # Applied to every list endpoint: client-adjustable page size, capped (see store/pagination.py)
+    'DEFAULT_PAGINATION_CLASS' : 'store.pagination.DefaultPagination',
+
+    # Filtering, search and ordering are available on every view;
+    # each view opts in by declaring filterset_class / search_fields / ordering_fields
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
     ),
 }
 
