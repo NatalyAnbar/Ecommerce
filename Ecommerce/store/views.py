@@ -1,6 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
-from . import models,Serializers,filters,pagination
-from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
+from . import models,Serializers,filters
+from django.db.models import Avg,Count
+from rest_framework import permissions
 
 
 class CategoryView(ModelViewSet):
@@ -14,7 +15,7 @@ class CategoryView(ModelViewSet):
     queryset = models.Category.objects.prefetch_related('products__images').all()
     serializer_class = Serializers.CategorySerializer
     lookup_field = 'slug'
-    permission_classes = [DjangoModelPermissionsOrAnonReadOnly]
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
 
     # Partial, case-insensitive match in either language
     search_fields = ['name_en','name_ar']
@@ -28,11 +29,19 @@ class ProductView(ModelViewSet):
     `?category=phones&price_min=100&price_max=500&search=apple&page_size=5`&ordering=-price
     """
 
-    # Prefetch gallery images to avoid one query per product
-    queryset = models.Product.objects.prefetch_related('images').all()
+    queryset = (
+        models.Product.objects
+        # Load gallery images in one extra query instead of one per product
+        .prefetch_related('images','product_reviews')
+        # Average rating and review count are computed per request, so they never go stale
+        .annotate(
+            avg_rating=Avg('product_reviews__rating'),
+            reviews_count=Count('product_reviews'),
+        )
+    )
     serializer_class = Serializers.ProductSerializer
     lookup_field = 'slug'
-    permission_classes = [DjangoModelPermissionsOrAnonReadOnly]
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
 
     # Structured filters: category slug, brand, and price range
     filterset_class = filters.ProductFilter
@@ -52,4 +61,36 @@ class ProductImageView(ModelViewSet):
     # The serializer exposes only the product id, so no related data needs to be fetched
     queryset = models.ProductImage.objects.all()
     serializer_class = Serializers.ImageSerializer
-    permission_classes = [DjangoModelPermissionsOrAnonReadOnly]
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+
+
+class ReviewView(ModelViewSet):
+    """
+    Reviews nested under a product: /products/<slug>/reviews/.
+
+    Anyone can read; authenticated users can post one review per product
+    and only edit or delete their own.
+    """
+
+    serializer_class = Serializers.ReviewSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        product_slug = self.kwargs['product_slug']
+        product = models.Product.objects.filter(id=product_slug)
+        return models.Review.objects.filter(user=self.request.user , product=product)
+
+
+    def get_serializer_context(self):
+        # Pass the product from the URL so the serializer can enforce one review per user
+        context = super().get_serializer_context()
+        context['product_slug'] = self.kwargs['product_slug']
+        return context
+    
+
+    def perform_create(self, serializer):
+        # Author and product come from the request and URL, never from the client payload
+        user = self.request.user
+        product_pk = self.kwargs['product_slug']
+        product = models.Product.objects.get_object_or_404(id=product_pk)
+        serializer.save(user=user,product=product)
