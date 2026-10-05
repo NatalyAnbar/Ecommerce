@@ -87,7 +87,7 @@ class Review(models.Model):
                                                      MaxValueValidator(5)])
 
     comment = models.TextField(max_length=500,blank=True)
-
+ 
     # Keep the review if the author deletes their account, so the product's rating history stays intact
     user = models.ForeignKey(User,
                              on_delete=models.SET_NULL,
