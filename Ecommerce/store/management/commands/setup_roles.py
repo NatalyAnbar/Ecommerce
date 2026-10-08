@@ -38,9 +38,8 @@ class Command(BaseCommand):
 
             # Warn about codenames that do not exist (typos, renamed or missing models)
             found = permissions.values_list('codename',flat=True)
-            missing = set(codenames) - set(found)
 
-            if missing:
+            if missing:=set(codenames) - set(found):
                 self.stdout.write(
                     self.style.WARNING(
                         f'{role} : missing permissions {sorted(missing)}'
