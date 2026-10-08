@@ -64,20 +64,18 @@ class Product(models.Model):
 
 
 class ProductImage(models.Model):
-
-    # Manage product gallery images and visibility
+    """A gallery image of a product. One image per product can be marked as main."""
 
     product = models.ForeignKey('Product', 
                                 on_delete=models.CASCADE, 
                                 related_name='images')
-    img = models.ImageField(upload_to='',blank=True)
+    img = models.ImageField(upload_to='products/')
     title_en = models.CharField(max_length=100, blank=True)
     title_ar = models.CharField(max_length=100, blank=True)
-    is_main = models.BooleanField(blank=True,null=True)
+    is_main = models.BooleanField(default=False)
 
-    # Return English title as the main string representation
     def __str__(self):
-        return self.title_en
+        return self.title_en or f'Image {self.pk} of {self.product}'
 
 
 class Review(models.Model):
