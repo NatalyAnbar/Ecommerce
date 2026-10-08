@@ -21,8 +21,8 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Review
-        fields = ['rating','comment','user','product','created_at']
-        read_only_fields = ['user','product','created_at']
+        fields = ['id','rating','comment','user','product','created_at']
+        read_only_fields = ['id','user','product','created_at']
 
     def validate(self, attrs):
         """Reject a second review of the same product, returning 400 instead of a database error."""
@@ -46,7 +46,8 @@ class ProductSerializer(TranslationMixin, serializers.ModelSerializer):
     uploaded_img = serializers.ListField(
             child = serializers.ImageField(
                 allow_empty_file=False),
-                write_only = True)
+                write_only = True,
+                required=False,)
     
     slug = serializers.CharField(read_only=True)
     name = serializers.SerializerMethodField()
@@ -58,22 +59,29 @@ class ProductSerializer(TranslationMixin, serializers.ModelSerializer):
     description_en = serializers.CharField(write_only=True)
     description_ar = serializers.CharField(write_only=True)
 
+    avg_rating = serializers.FloatField(read_only=True)
+    reviews_count = serializers.IntegerField(read_only=True)
+    
     class Meta:
         model = models.Product
         fields = ['id','category',
                   'slug','brand','price',
                   'name','name_en','name_ar',
                   'description','description_en','description_ar',
-                  'uploaded_img','images']
+                  'uploaded_img','images',
+                  'avg_rating','reviews_count']
 
     def create(self, validated_data):
-        # Extract uploaded images and save the new product instance
-        images = validated_data.pop('uploaded_img')
+        # Product and its images are saved together
+        
+        images = validated_data.pop('uploaded_img',[])
         product = models.Product.objects.create(**validated_data)
 
-        # Save multiple product gallery images sequentially
-        for img in images:
-            models.ProductImage.objects.create(product=product,img=img)
+        # The first uploaded image becomes the product's main image
+        for index,img in enumerate(images):
+            models.ProductImage.objects.create(product=product,
+                                               img=img,
+                                               is_main=(index==0))
         return product
 
     # Resolve product name dynamically based on language
