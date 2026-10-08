@@ -10,6 +10,7 @@ router = DefaultRouter()
 router.register('categories',views.CategoryView,basename='category')
 router.register('products',views.ProductView,basename='product')
 router.register('images',views.ProductImageView,basename='image')
+router.register('reviews',views.ReviewView,basename='review')
 
 # Reviews live under their product: /products/<slug>/reviews/
 nested_product_review = routers.NestedDefaultRouter(
@@ -18,7 +19,7 @@ nested_product_review = routers.NestedDefaultRouter(
     lookup = 'product'
 )
 
-nested_product_review.register('revirews',views.ReviewView,basename='review')
+nested_product_review.register('reviews',views.ReviewView,basename='product_review')
 
 urlpatterns = [
     path('',include(router.urls)),
