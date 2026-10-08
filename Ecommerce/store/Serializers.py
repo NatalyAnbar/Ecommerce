@@ -16,6 +16,29 @@ class ImageSerializer(TranslationMixin, serializers.ModelSerializer):
         return self.resolve_translated_value(obj,'title')
 
 
+class ReviewSerializer(serializers.ModelSerializer):
+    """A product review; the author and product are set by the view, never by the client."""
+
+    class Meta:
+        model = models.Review
+        fields = ['rating','comment','user','product','created_at']
+        read_only_fields = ['user','product','created_at']
+
+    def validate(self, attrs):
+        """Reject a second review of the same product, returning 400 instead of a database error."""
+
+        request = self.context['request']
+        user = request.user
+        product_slug = self.context['product_slug']
+
+        if models.Review.objects.filter(
+            user=user,product__slug=product_slug
+            ).exists():
+            raise serializers.ValidationError('You have already reviewed this product.')
+        
+        return attrs
+
+
 class ProductSerializer(TranslationMixin, serializers.ModelSerializer):
 
     # Handle product details with nested images 
@@ -77,6 +100,9 @@ class CategorySerializer(TranslationMixin, serializers.ModelSerializer):
     # Resolve category name dynamically based on language
     def get_name(self,obj):
         return self.resolve_translated_value(obj,'name')
+
+
+
 
 
 
