@@ -1,7 +1,8 @@
 from rest_framework.viewsets import ModelViewSet
-from . import models,Serializers,filters
+from . import models,Serializers,filters,store_permissions
 from django.db.models import Avg,Count
 from rest_framework import permissions
+from django.shortcuts import get_object_or_404
 
 
 class CategoryView(ModelViewSet):
@@ -32,7 +33,7 @@ class ProductView(ModelViewSet):
     queryset = (
         models.Product.objects
         # Load gallery images in one extra query instead of one per product
-        .prefetch_related('images','product_reviews')
+        .prefetch_related('images')
         # Average rating and review count are computed per request, so they never go stale
         .annotate(
             avg_rating=Avg('product_reviews__rating'),
@@ -73,12 +74,15 @@ class ReviewView(ModelViewSet):
     """
 
     serializer_class = Serializers.ReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly,store_permissions.IsOwnerOrReadOnly]
 
     def get_queryset(self):
         product_slug = self.kwargs['product_slug']
-        product = models.Product.objects.filter(id=product_slug)
-        return models.Review.objects.filter(user=self.request.user , product=product)
+        try:
+            product = models.Product.objects.get(slug=product_slug)
+        except:
+            raise ValueError('The product not found')
+        return models.Review.objects.filter(product=product)
 
 
     def get_serializer_context(self):
@@ -91,6 +95,6 @@ class ReviewView(ModelViewSet):
     def perform_create(self, serializer):
         # Author and product come from the request and URL, never from the client payload
         user = self.request.user
-        product_pk = self.kwargs['product_slug']
-        product = models.Product.objects.get_object_or_404(id=product_pk)
+        product_slug = self.kwargs['product_slug']
+        product = get_object_or_404(models.Product,slug=product_slug)
         serializer.save(user=user,product=product)
