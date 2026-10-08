@@ -31,9 +31,9 @@ class ReviewSerializer(serializers.ModelSerializer):
         user = request.user
         product_slug = self.context['product_slug']
 
-        if already_reviewed := models.Review.objects.filter(
+        if models.Review.objects.filter(
             user=user,product__slug=product_slug
-            ):
+            ).exists():
             raise serializers.ValidationError('You have already reviewed this product.')
         
         return attrs
@@ -47,8 +47,6 @@ class ProductSerializer(TranslationMixin, serializers.ModelSerializer):
             child = serializers.ImageField(
                 allow_empty_file=False),
                 write_only = True)
-
-    product_reviews = ReviewSerializer(many=True,read_only=True )
     
     slug = serializers.CharField(read_only=True)
     name = serializers.SerializerMethodField()
