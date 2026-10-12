@@ -65,7 +65,11 @@ class ProductImage(models.Model):
     product = models.ForeignKey('Product', 
                                 on_delete=models.CASCADE, 
                                 related_name='images')
-    img = models.ImageField(upload_to='products/')
+
+    # Format, file size and dimensions are checked by store_validators
+    img = models.ImageField(upload_to='products/' , 
+                            validators=store_validators.PRODUCT_IMAGE_VALIDATORS)
+    
     title_en = models.CharField(max_length=100, blank=True)
     title_ar = models.CharField(max_length=100, blank=True)
     is_main = models.BooleanField(default=False)
