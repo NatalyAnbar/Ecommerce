@@ -80,6 +80,9 @@ class ProductImage(models.Model):
     title_ar = models.CharField(max_length=100, blank=True)
     is_main = models.BooleanField(default=False)
 
+    class Meta:
+        ordering = ['title_en']
+
     def __str__(self):
         return self.title_en or f'Image {self.pk} of {self.product}'
 
