@@ -1,4 +1,6 @@
-"""Tests for the product image upload rules."""
+
+"""Tests for product image uploads and the nested image endpoint."""
+
 
 import pytest
 from model_bakery import baker 
@@ -8,6 +10,7 @@ from django.urls import reverse
 
 
 def get_product_image_url_list(product):
+    """URL for listing a product's images."""
     return reverse('product-images-list',kwargs={'product_slug':product.slug})
 
 
