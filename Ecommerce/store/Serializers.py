@@ -37,10 +37,12 @@ class ImageSerializer(TranslationMixin, serializers.ModelSerializer):
 
     # Title in the client's language (Accept-Language)
     title = serializers.SerializerMethodField()
+    title_en = serializers.CharField(write_only=True)
+    title_ar = serializers.CharField(write_only=True)
 
     class Meta:
         model = models.ProductImage
-        fields = ['id', 'img', 'title', 'is_main']
+        fields = ['id', 'img', 'title_en' ,'title_ar', 'title', 'is_main']
 
     def get_title(self, obj):
         return self.resolve_translated_value(obj, 'title')
