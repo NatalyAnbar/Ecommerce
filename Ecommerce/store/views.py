@@ -39,6 +39,8 @@ class ProductView(ModelViewSet):
             avg_rating=Avg('product_reviews__rating'),
             reviews_count=Count('product_reviews'),
         )
+        # Meta.ordering is ignored once annotate() groups rows, so order explicitly
+        .order_by('slug')
     )
     serializer_class = Serializers.ProductSerializer
     lookup_field = 'slug'

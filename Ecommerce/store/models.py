@@ -15,10 +15,12 @@ class Category(models.Model):
     name_ar = models.CharField(max_length=100,db_index=True)
     slug = models.SlugField(unique=True)
 
+    class Meta:
+        # A fixed order keeps paginated results stable
+        ordering = ['slug']
 
     def __str__(self):
         return self.name_en
-
 
     def save(self, *args, **kwargs):
         """Generate a unique slug from the English name on first save."""
@@ -46,6 +48,10 @@ class Product(models.Model):
                                 max_digits=7, 
                                 decimal_places=2, 
                                 db_index=True)
+
+    class Meta:
+        # A fixed order keeps paginated results stable
+        ordering = ['slug']
 
     def __str__(self):
         return self.name_en
