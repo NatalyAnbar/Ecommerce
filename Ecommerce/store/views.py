@@ -57,20 +57,25 @@ class ProductView(ModelViewSet):
 
 class ProductImageView(ModelViewSet):
     """
-    CRUD endpoints for product gallery images, looked up by id.
-    Anyone can read; writes require the matching Django model permission.
+    Gallery images nested under a product: /products/<slug>/images/.
+
+    Images are added only through the product form; this endpoint lists,
+    edits and deletes them. Anyone can read; writes require the matching
+    Django model permission.
+
+    No POST: new images are uploaded with the product.
+    No PUT: it requires the file, so changing a title would mean re-uploading the image;
+    PATCH covers every edit, including replacing the file.
     """
 
-    # No POST or PUT: new images are uploaded with the product
     http_method_names = ['get', 'patch', 'delete', 'head', 'options']
-    # The serializer exposes only the product id, so no related data needs to be fetched
     serializer_class = Serializers.ImageSerializer
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
 
     def get_queryset(self):
-        """The product from the URL (404 if it doesn't exist)."""
+        """Images of the product in the URL (empty if the product doesn't exist)."""
         product_slug = self.kwargs['product_slug']
-        return models.ProductImage.objects.filter(slug=product_slug)
+        return models.ProductImage.objects.filter(product__slug=product_slug)
 
 
 class ReviewView(ModelViewSet):
