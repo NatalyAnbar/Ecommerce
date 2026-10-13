@@ -77,13 +77,34 @@ def test_anonymous_user_cannot_create_review(api_client):
 
 
 @pytest.mark.django_db
-def test_authenticated_user_can_create_review(api_client,authenticate):
+def test_authenticated_user_can_create_review(api_client, authenticate):
     """The review is saved with the requesting user and the product from the URL."""
+    user = authenticate()
+    product = baker.make(models.Product)
+
+    response = api_client.post(reviews_list_url(product), {'rating': 3}, format='json')
+
+    assert response.status_code == 201
+    review = models.Review.objects.get(id=response.data['id'])
+    assert review.user == user
+    assert review.product == product
+
+
+@pytest.mark.django_db
+def test_owner_can_update_own_review(api_client, authenticate):
+    """The author can edit their review."""
 
     user = authenticate()
     product = baker.make(models.Product)
-    url = reviews_list_url(product)
-    response = api_client.post(url , {'rating':3} , format='json')
-    assert response.status_code == 201
-    assert models.Review.objects.filter(rating=3).exists()
+    review = baker.make(models.Review, user=user, product=product, rating=3)
+
+    response = api_client.patch(
+        reverse('product_review-detail', kwargs={'product_slug': product.slug, 'pk': review.pk}),
+        {'rating': 5},
+        format='json'
+    )
+
+    assert response.status_code == 200
+    review.refresh_from_db()
+    assert review.rating == 5
 

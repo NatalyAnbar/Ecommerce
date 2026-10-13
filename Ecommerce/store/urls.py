@@ -9,21 +9,15 @@ router = DefaultRouter()
 
 router.register('categories',views.CategoryView,basename='category')
 router.register('products',views.ProductView,basename='product')
-router.register('images',views.ProductImageView,basename='image')
-router.register('reviews',views.ReviewView,basename='review')
 
-# Reviews live under their product: /products/<slug>/reviews/
-nested_product_review = routers.NestedDefaultRouter(
-    router,
-    'products',
-    lookup = 'product'
-)
-
-nested_product_review.register('reviews',views.ReviewView,basename='product_review')
+# Endpoints that belong to a single product: /products/<slug>/reviews/ and /products/<slug>/images/
+products_router = routers.NestedDefaultRouter(router, 'products', lookup='product')
+products_router.register('reviews', views.ReviewView, basename='product_review')
+products_router.register('images', views.ProductImageView, basename='product-images')
 
 urlpatterns = [
     path('',include(router.urls)),
-    path('',include(nested_product_review.urls))
+    path('',include(products_router.urls))
 ]
 
 if settings.DEBUG:

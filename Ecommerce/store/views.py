@@ -39,6 +39,8 @@ class ProductView(ModelViewSet):
             avg_rating=Avg('product_reviews__rating'),
             reviews_count=Count('product_reviews'),
         )
+        # Meta.ordering is ignored once annotate() groups rows, so order explicitly
+        .order_by('slug')
     )
     serializer_class = Serializers.ProductSerializer
     lookup_field = 'slug'
@@ -55,14 +57,25 @@ class ProductView(ModelViewSet):
 
 class ProductImageView(ModelViewSet):
     """
-    CRUD endpoints for product gallery images, looked up by id.
-    Anyone can read; writes require the matching Django model permission.
+    Gallery images nested under a product: /products/<slug>/images/.
+
+    Images are added only through the product form; this endpoint lists,
+    edits and deletes them. Anyone can read; writes require the matching
+    Django model permission.
+
+    No POST: new images are uploaded with the product.
+    No PUT: it requires the file, so changing a title would mean re-uploading the image;
+    PATCH covers every edit, including replacing the file.
     """
 
-    # The serializer exposes only the product id, so no related data needs to be fetched
-    queryset = models.ProductImage.objects.all()
+    http_method_names = ['get', 'patch', 'delete', 'head', 'options']
     serializer_class = Serializers.ImageSerializer
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+
+    def get_queryset(self):
+        """Images of the product in the URL (empty if the product doesn't exist)."""
+        product_slug = self.kwargs['product_slug']
+        return models.ProductImage.objects.filter(product__slug=product_slug)
 
 
 class ReviewView(ModelViewSet):
@@ -76,25 +89,24 @@ class ReviewView(ModelViewSet):
     serializer_class = Serializers.ReviewSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly,store_permissions.IsOwnerOrReadOnly]
 
-    def get_queryset(self):
+    def get_product(self):
+        """The product from the URL, fetched once per request (404 if it doesn't exist)."""
         product_slug = self.kwargs['product_slug']
-        try:
-            product = models.Product.objects.get(slug=product_slug)
-        except:
-            raise ValueError('The product not found')
-        return models.Review.objects.filter(product=product)
+        return get_object_or_404(models.Product , slug=product_slug)
+
+
+    def get_queryset(self):
+        return models.Review.objects.select_related('user').filter(product=self.get_product())
 
 
     def get_serializer_context(self):
-        # Pass the product from the URL so the serializer can enforce one review per user
+        """ Pass the product from the URL so the serializer can enforce one review per user """
         context = super().get_serializer_context()
         context['product_slug'] = self.kwargs['product_slug']
         return context
     
 
     def perform_create(self, serializer):
-        # Author and product come from the request and URL, never from the client payload
+        """ Author and product come from the request and URL, never from the client payload """
         user = self.request.user
-        product_slug = self.kwargs['product_slug']
-        product = get_object_or_404(models.Product,slug=product_slug)
-        serializer.save(user=user,product=product)
+        serializer.save(user=user,product=self.get_product())

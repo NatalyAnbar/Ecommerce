@@ -1,37 +1,39 @@
+
+"""Store models: categories, products, their images and customer reviews."""
+
 from django.db import models
-from django.utils.text import slugify
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator,MaxValueValidator
+from django.core import validators
+from . import store_validators,helper
 
 User = get_user_model()
 
 class Category(models.Model):
+    """A product category, with names in English and Arabic."""
 
-    # Category name fields for bilingual support
     name_en = models.CharField(max_length=100,db_index=True)
     name_ar = models.CharField(max_length=100,db_index=True)
     slug = models.SlugField(unique=True)
 
-    # Return English name as the main string representation
+    class Meta:
+        # A fixed order keeps paginated results stable
+        ordering = ['slug']
+
     def __str__(self):
         return self.name_en
 
-    # Generate a unique URL slug before saving the category
     def save(self, *args, **kwargs):
+        """Generate a unique slug from the English name on first save."""
+
         if not self.slug:
-            base = slugify(self.name_en)
-            self.slug = base
-            counter = 1
-            while Category.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
-                self.slug = f'{base}-{counter}'
-                counter += 1
+            self.slug = helper.generate_unique_slug(self,self.name_en)
         return super().save(*args, **kwargs)
 
 
 class Product(models.Model):
+    """A product for sale, with bilingual name and description."""
 
-    # Product database fields 
-
+    # Products stay in the store if their category is deleted
     category = models.ForeignKey('Category', 
                                  on_delete=models.SET_NULL, 
                                  null=True, 
@@ -39,52 +41,57 @@ class Product(models.Model):
     slug = models.SlugField(unique=True)
     name_en = models.CharField(max_length=100, db_index=True)
     name_ar = models.CharField(max_length=100, db_index=True)
-    brand = models.CharField(max_length=100, blank=True)
+    brand = models.CharField(max_length=100, blank=True, db_index=True)
     description_en = models.TextField(max_length=500, blank=True)
     description_ar = models.TextField(max_length=500, blank=True)
-    price = models.DecimalField(validators=[MinValueValidator(0)], 
+    price = models.DecimalField(validators=[validators.MinValueValidator(0)], 
                                 max_digits=7, 
                                 decimal_places=2, 
                                 db_index=True)
 
-    # Return English name as the main string representation
+    class Meta:
+        # A fixed order keeps paginated results stable
+        ordering = ['slug']
+
     def __str__(self):
         return self.name_en
 
-    # Generate a unique URL slug before saving the product
+
     def save(self, *args, **kwargs):
+        """Generate a unique slug from the English name on first save."""
+
         if not self.slug:
-            base = slugify(self.name_en)
-            self.slug = base
-            counter = 1
-            while Product.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
-                self.slug = f'{base}-{counter}'
-                counter += 1
+            self.slug = helper.generate_unique_slug(self, self.name_en)
         return super().save(*args, **kwargs)
 
 
 class ProductImage(models.Model):
-
-    # Manage product gallery images and visibility
+    """A gallery image of a product. One image per product can be marked as main."""
 
     product = models.ForeignKey('Product', 
                                 on_delete=models.CASCADE, 
                                 related_name='images')
-    img = models.ImageField(upload_to='',blank=True)
+
+    # Format, file size and dimensions are checked by store_validators
+    img = models.ImageField(upload_to='products/' , 
+                            validators=store_validators.PRODUCT_IMAGE_VALIDATORS)
+    
     title_en = models.CharField(max_length=100, blank=True)
     title_ar = models.CharField(max_length=100, blank=True)
-    is_main = models.BooleanField(blank=True,null=True)
+    is_main = models.BooleanField(default=False)
 
-    # Return English title as the main string representation
+    class Meta:
+        ordering = ['title_en']
+
     def __str__(self):
-        return self.title_en
+        return self.title_en or f'Image {self.pk} of {self.product}'
 
 
 class Review(models.Model):
     """A customer's 1_5 star rating of a product, with an optional comment."""
 
-    rating = models.PositiveIntegerField(validators=[MinValueValidator(1),
-                                                     MaxValueValidator(5)])
+    rating = models.PositiveIntegerField(validators=[validators.MinValueValidator(1),
+                                                     validators.MaxValueValidator(5)])
 
     comment = models.TextField(max_length=500,blank=True)
  
