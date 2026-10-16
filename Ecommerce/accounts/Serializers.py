@@ -53,6 +53,6 @@ class MeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.User
-        fields = ['email', 'first_name', 'last_name', 'date_joined']
+        fields = ['id', 'email', 'first_name', 'last_name', 'date_joined']
         # Changing the email changes the login, so it needs its own verified flow
-        read_only_fields = ['email','date_joined']
+        read_only_fields = ['id', 'email','date_joined']
