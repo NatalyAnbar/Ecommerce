@@ -12,5 +12,6 @@ urlpatterns = [
     path('login/',TokenObtainPairView.as_view()),
     path('refreshtoken/',TokenRefreshView.as_view()),
     # A single URL with no id: the user comes from the token
-    path('me/',views.MeView.as_view(),name='me')
+    path('me/',views.MeView.as_view(),name='me'),
+    path('change_password/',views.ChangePasswordView.as_view(),name='change_password')
 ]

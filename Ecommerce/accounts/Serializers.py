@@ -56,3 +56,48 @@ class MeSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'first_name', 'last_name', 'date_joined']
         # Changing the email changes the login, so it needs its own verified flow
         read_only_fields = ['id', 'email','date_joined']
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    Change the logged-in user's password.
+
+    Takes the current password and the new one twice. The view passes the
+    user in as the instance, so saving calls update().
+    """
+
+    old_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    new_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    confirm_new_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+
+    def validate_old_password(self, value):
+        """Make sure the person changing the password knows the current one."""
+        if not self.instance.check_password(value):
+            raise serializers.ValidationError('The old password is incorrect.')
+        return value
+
+
+    def validate_new_password(self, value):
+        """Run Django's password rules (length, common, numeric, similar to the user)."""
+        try:
+            # The user is passed so the password can't be too close to their email or name
+            validate_password(value, user=self.instance)
+        except ValidationError as error:
+            raise serializers.ValidationError(list(error.messages))
+        return value
+
+    def validate(self, attrs):
+        """Compare the two new passwords"""
+        if attrs['new_password'] != attrs['confirm_new_password']:
+            raise serializers.ValidationError({'confirm_new_password': 'The passwords do not match.'})
+        return attrs
+
+
+    def update(self, instance, validated_data):
+        """Hash and store the new password"""
+        instance.set_password(validated_data['new_password'])
+        # Only the password column changes, so only that one is written
+        instance.save(update_fields=['password'])
+        return instance
+
+    

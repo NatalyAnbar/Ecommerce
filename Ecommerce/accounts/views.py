@@ -29,3 +29,12 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class ChangePasswordView(generics.UpdateAPIView):
+    serializer_class = Serializers.ChangePasswordSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['put','head','options']
+
+    def get_object(self):
+        return self.request.user
