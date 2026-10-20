@@ -18,7 +18,7 @@ class Cart(models.Model):
     updated_at = models.DateTimeField(auto_now=True) 
 
     @property
-    def totalPrice(self):
+    def total_price(self):
         """Sum of every line, recalculated on each read; prefetch items in the view."""
         items = self.cart_items.all()
         return sum(item.total_price for item in items)
