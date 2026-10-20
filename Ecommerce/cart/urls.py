@@ -4,8 +4,6 @@ from . import views
 
 router = routers.DefaultRouter()
 router.register('carts',views.CartView,basename='cart')
-router.register('additems',views.AddItemView)
-
 
 # Setup hierarchical nested routes structure for tracking cart rows
 cart_items_nested_router = routers.NestedDefaultRouter(
