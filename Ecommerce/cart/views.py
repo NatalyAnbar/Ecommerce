@@ -1,13 +1,15 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from . import models,Serializers
-from rest_framework.permissions import AllowAny,IsAuthenticated
+from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
+
 
 class CartView(ModelViewSet):
     serializer_class = Serializers.CartSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         # Context split based on user authentication status
@@ -33,47 +35,47 @@ class CartView(ModelViewSet):
 
 
 class CartItemView(ModelViewSet):
+
     serializer_class = Serializers.CartItemSerializer
+    # Carts work without logging in; the queryset decides whose cart you can reach
+    permission_classes = [permissions.AllowAny]
+    # PUT would require product_id on every edit; quantity changes use PATCH
+    http_method_names = ['post','get','patch','delete','head','options']
 
     def get_queryset(self):
-        # get cart items for only filtered cart
+        user = self.request.user
+        # Logged in: only your own cart. Not logged in: only anonymous carts.
+        owner = user if user.is_authenticated else None
+        return models.CartItem.objects.select_related('product').filter(
+            cart_id=self.kwargs['cart_pk'],
+            cart__user=owner,
+        )
 
-        pk = self.kwargs['cart_pk']
-
-        if pk:
-            return models.CartItem.objects.select_related('product_cart_items').filter(cart_id=pk)
-            
-        return models.CartItem.objects.select_related('product_cart_items').all()
-
-
+    
     def perform_create(self, serializer):
-        # Target specific cart nested route parent ID before adding an item
-
-        pk = self.kwargs['cart_pk']
-        try:
-            cart = models.Cart.objects.get(cart_id=pk)
-        except models.Cart.DoesNotExist:
-            return Response('Cart does not exsist')
-        serializer.save(cart=cart)
+        # Same rule as get_queryset: you can only add to your own (or an anonymous) cart
+        user = self.request.user
+        owner = user if user.is_authenticated else None
+        get_object_or_404(models.Cart, pk=self.kwargs['cart_pk'], user=owner)
+        serializer.save()
 
 
-class AddItemView(ModelViewSet):
-    queryset = models.CartItem.objects.all()
-    serializer_class = Serializers.AddItemSerializer
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['cart_id'] = self.kwargs['cart_pk']
+        return context
 
 
 class MergeCartView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self,request):
+        serializer = Serializers.MergeCartSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         # Merge visitor guest cart data with authorized user profile
-
-        visitor_id = self.request.data.get('cart_id')
-
-        try:
-            visitor_cart = models.Cart.objects.get(id=visitor_id,user=None)
-        except models.Cart.DoesNotExist:
-            return Response({'msg' : 'Cart already merged'})
+        visitor_id = serializer.validated_data['cart_id']
+        visitor_cart = get_object_or_404(models.Cart, id=visitor_id, user=None)
         
         user = self.request.user
         user_cart,created = models.Cart.objects.get_or_create(user=user)
@@ -87,8 +89,8 @@ class MergeCartView(APIView):
                 defaults={'quantity': item.quantity}
             )
             if not created :
-                new_item.quantity += item.quantity
-                new_item.save()
+                new_item.quantity = min(new_item.quantity + item.quantity , 100)
+                new_item.save(update_fields=['quantity'])
 
         # Flush temporary guest cart after successful data migration
         visitor_cart.delete()
