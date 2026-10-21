@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'django_filters',
+    'drf_spectacular',
 
     # Internal Core Subsystems
     'store',
@@ -106,6 +107,25 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ),
+
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'E-Commerce API',
+    'DESCRIPTION': (
+        'REST API for an online store: products and reviews, '
+        'JWT authentication, and a cart that works for guests and signed-in users.'
+    ),
+    'VERSION': '1.0.0',
+    # Hide the raw schema endpoint from the docs page itself.
+    'SERVE_INCLUDE_SCHEMA': False,
+    # Show separate request/response shapes (e.g. product_id in, product out).
+    'COMPONENT_SPLIT_REQUEST': True,
+
+    # Pin ReDoc: the latest release breaks when loaded as a classic script.
+    'REDOC_DIST': 'https://cdn.jsdelivr.net/npm/redoc@2.1.5',
 }
 
 
