@@ -1,7 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.views import APIView
+from django.db import transaction
 from . import models,Serializers
-from rest_framework import permissions,status
+from rest_framework import permissions,status,generics
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
@@ -75,34 +75,41 @@ class CartItemView(ModelViewSet):
         return context
 
 
-class MergeCartView(APIView):
+class MergeCartView(generics.GenericAPIView):
+    """
+    Move an anonymous cart into the logged-in user's cart: POST /carts/merge/.
+    Called after login. Products in both carts are added up (capped at 100),
+    and the anonymous cart is deleted.
+    """
+
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = Serializers.MergeCartSerializer
 
     def post(self,request):
-        serializer = Serializers.MergeCartSerializer(data=request.data)
+        # Rejects a missing or malformed id with a 400 instead of crashing the lookup
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Merge visitor guest cart data with authorized user profile
-        visitor_id = serializer.validated_data['cart_id']
-        visitor_cart = get_object_or_404(models.Cart, id=visitor_id, user=None)
-        
-        user = self.request.user
-        user_cart,created = models.Cart.objects.get_or_create(user=user)
-        items = visitor_cart.cart_items.all()
+        guest_id = serializer.validated_data['cart_id']
+        guest_cart = get_object_or_404(models.Cart, id=guest_id, user=None)
 
-        # Sequentially append or update item quantities 
-        for item in items:
-            new_item,created = models.CartItem.objects.get_or_create(
-                cart = user_cart,
-                product = item.product,
-                defaults={'quantity': item.quantity}
-            )
-            if not created :
-                new_item.quantity = min(new_item.quantity + item.quantity , 100)
-                new_item.save(update_fields=['quantity'])
+        user_cart , _ = models.Cart.objects.get_or_create(user=request.user)
+        items = guest_cart.cart_items.select_related('product')
 
-        # Flush temporary guest cart after successful data migration
-        visitor_cart.delete()
+        # All of it or none of it: a failure halfway must not leave the items half-moved
+        with transaction.atomic():
+            for item in items:
+                new_item,created = models.CartItem.objects.get_or_create(
+                    cart = user_cart,
+                    product = item.product,
+                    defaults={'quantity': item.quantity}
+                )
+                if not created :
+                    # Same product in both carts: one line with the quantities added up
+                    new_item.quantity = min(new_item.quantity + item.quantity , 100)
+                    new_item.save(update_fields=['quantity'])
+
+            guest_cart.delete()
 
         return Response({
             'message': 'Cart merged successfully', 
