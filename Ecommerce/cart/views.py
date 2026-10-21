@@ -1,10 +1,11 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from . import models,Serializers
-from rest_framework import permissions
+from rest_framework import permissions,status
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
+from rest_framework.decorators import action
 
 
 class CartView(ModelViewSet):
@@ -30,6 +31,15 @@ class CartView(ModelViewSet):
             serializer.save(user=user)
         else:
             serializer.save()
+
+
+    @action(detail=True , methods=['delete'])
+    def clear(self, request, pk=None):
+        """Empty the cart but keep it: DELETE /carts/<id>/clear/."""
+        # get_object applies the same rule as everywhere else: your cart, or an anonymous one
+        cart = self.get_object()
+        cart.cart_items.all().delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CartItemView(ModelViewSet):
