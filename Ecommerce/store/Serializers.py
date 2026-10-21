@@ -19,7 +19,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     # Shown as a small object so more public fields (like a photo) can be added later
     # without changing the response's shape
-    user = MinieviewSeializer(read_only=True)
+    user = MiniReviewSeializer(read_only=True)
     class Meta:
         model = models.Review
         fields = ['id', 'rating', 'comment', 'user', 'created_at']
