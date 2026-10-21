@@ -13,7 +13,6 @@ class CartView(ModelViewSet):
 
     def get_queryset(self):
         # Context split based on user authentication status
-
         user = self.request.user
         if user.is_authenticated:
             return models.Cart.objects.prefetch_related('cart_items').filter(user=user)
@@ -24,7 +23,6 @@ class CartView(ModelViewSet):
 
     def perform_create(self, serializer):
         # Custom create to inject active user inside the cart
-
         user = self.request.user
         if user.is_authenticated:
             if models.Cart.objects.filter(user=user).exists():
@@ -42,21 +40,22 @@ class CartItemView(ModelViewSet):
     # PUT would require product_id on every edit; quantity changes use PATCH
     http_method_names = ['post','get','patch','delete','head','options']
 
-    def get_queryset(self):
+    def get_cart(self):
+        """The cart from the URL, if this request may use it; otherwise a 404."""
         user = self.request.user
         # Logged in: only your own cart. Not logged in: only anonymous carts.
         owner = user if user.is_authenticated else None
-        return models.CartItem.objects.select_related('product').filter(
-            cart_id=self.kwargs['cart_pk'],
-            cart__user=owner,
-        )
+        return get_object_or_404(models.Cart, pk=self.kwargs['cart_pk'], user=owner)
+
+    def get_queryset(self):
+        # Checking the cart first turns someone else's cart into a 404, not an empty list
+        cart = self.get_cart()
+        return models.CartItem.objects.select_related('product').filter(cart=cart)
 
     
     def perform_create(self, serializer):
         # Same rule as get_queryset: you can only add to your own (or an anonymous) cart
-        user = self.request.user
-        owner = user if user.is_authenticated else None
-        get_object_or_404(models.Cart, pk=self.kwargs['cart_pk'], user=owner)
+        self.get_cart()
         serializer.save()
 
 
