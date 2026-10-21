@@ -7,6 +7,12 @@ from django.db import IntegrityError
 
 User = get_user_model()
 
+def reviews_detail_url(product , review):
+    return reverse('product_review-detail', 
+                   kwargs={'product_slug': product.slug, 
+                           'pk': review.pk})
+
+
 def reviews_list_url(product):
     """Build the nested reviews list URL for the given product."""
     return reverse('product_review-list', kwargs={'product_slug': product.slug})
@@ -99,7 +105,7 @@ def test_owner_can_update_own_review(api_client, authenticate):
     review = baker.make(models.Review, user=user, product=product, rating=3)
 
     response = api_client.patch(
-        reverse('product_review-detail', kwargs={'product_slug': product.slug, 'pk': review.pk}),
+        reviews_detail_url(product , review),
         {'rating': 5},
         format='json'
     )
@@ -108,3 +114,16 @@ def test_owner_can_update_own_review(api_client, authenticate):
     review.refresh_from_db()
     assert review.rating == 5
 
+
+@pytest.mark.django_db
+def test_reviews_show_the_reviewers_first_name_not_their_email(api_client):
+    user = baker.make(User , email='test@gmail.com' , first_name='test')
+    product = baker.make(models.Product)
+    baker.make(models.Review , user=user , product=product)
+    response = api_client.get(reviews_list_url(product))
+
+    assert response.status_code == 200
+    # Exactly the public fields: adding email (or anything else) here would fail this
+    assert response.data['results'][0]['user'] == {'first_name': 'test'}
+    assert 'test@gmail.com' not in str(response.data)
+    

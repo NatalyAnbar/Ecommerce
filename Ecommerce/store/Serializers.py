@@ -1,20 +1,30 @@
 
 """Serializers for the store API: products, categories, images and reviews."""
 
-
 from django.db import transaction
 from rest_framework import serializers
 from Ecommerce.mixins import TranslationMixin
 from . import models, store_validators
 
 
+class MiniReviewSeializer(serializers.ModelSerializer):
+    """The public face of a user, shown next to their reviews; never add private fields here."""
+    class Meta:
+        model = models.User
+        fields = ['first_name']
+
+
 class ReviewSerializer(serializers.ModelSerializer):
     """A product review; the author and product are set by the view, never by the client."""
 
+    # Shown as a small object so more public fields (like a photo) can be added later
+    # without changing the response's shape
+    user = MiniReviewSeializer(read_only=True)
     class Meta:
         model = models.Review
         fields = ['id', 'rating', 'comment', 'user', 'created_at']
         read_only_fields = ['id', 'user', 'created_at']
+
 
     def validate(self, attrs):
         """Reject a second review of the same product, returning 400 instead of a database error."""
