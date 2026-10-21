@@ -7,12 +7,6 @@ from cart import models
 from cart.test.test_cartitem import helper
 
 
-@pytest.fixture
-def item(cart, product):
-    """A line with 5 of the product, in the anonymous cart the test client can use."""
-    return baker.make(models.CartItem, cart=cart, product=product, quantity=5)
-
-
 @pytest.mark.django_db
 def test_editing_sets_the_new_quantity(api_client, cart, product, item):
     response = api_client.patch(

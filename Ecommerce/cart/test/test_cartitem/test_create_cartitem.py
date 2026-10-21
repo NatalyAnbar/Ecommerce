@@ -4,34 +4,14 @@
 import pytest
 from model_bakery import baker 
 from cart import models
-from django.urls import reverse
-
-
-def get_list_url(cart):
-    return reverse('cartitems-list', kwargs={'cart_pk': cart.pk})
-
-
-def get_data(product_id , **extra_fields):
-    """A request body for adding a product; tests pass quantity only when they need it."""
-    return {'product_id' : product_id} | extra_fields
-
-
-@pytest.fixture
-def cart():
-    """An anonymous cart, so the anonymous test client is allowed to use it."""
-    return baker.make(models.Cart)
-
-
-@pytest.fixture
-def product():
-    return baker.make(models.Product)
+from cart.test.test_cartitem import helper
 
 
 @pytest.mark.django_db
 def test_adding_a_product_creates_an_item(api_client, cart, product):
     response = api_client.post(
-                               get_list_url(cart),
-                               get_data(product.pk , quantity=5),
+                               helper.get_list_url(cart),
+                               helper.get_data(product.pk , quantity=5),
                                format='json'
                                )
     assert response.status_code == 201
@@ -42,8 +22,8 @@ def test_adding_a_product_creates_an_item(api_client, cart, product):
 @pytest.mark.django_db
 def test_quantity_defaults_to_one(api_client, cart, product):
     response = api_client.post(
-                               get_list_url(cart),
-                               get_data(product.pk),
+                               helper.get_list_url(cart),
+                               helper.get_data(product.pk),
                                format='json'
                                )
     assert response.status_code == 201
@@ -56,8 +36,8 @@ def test_quantity_defaults_to_one(api_client, cart, product):
 def test_adding_the_same_product_raises_its_quantity(api_client, cart, product):
     baker.make(models.CartItem, cart=cart, product=product, quantity=10)
     response = api_client.post(
-                               get_list_url(cart),
-                               get_data(product.pk , quantity=5),
+                               helper.get_list_url(cart),
+                               helper.get_data(product.pk , quantity=5),
                                format='json'
                                )
 
@@ -70,8 +50,8 @@ def test_adding_the_same_product_raises_its_quantity(api_client, cart, product):
 
 @pytest.mark.django_db
 def test_adding_a_missing_product_is_rejected(api_client, cart):
-    response = api_client.post(get_list_url(cart),
-                               get_data(999),
+    response = api_client.post(helper.get_list_url(cart),
+                               helper.get_data(999),
                                format='json'
                                )
     assert response.status_code == 400
@@ -82,8 +62,8 @@ def test_adding_a_missing_product_is_rejected(api_client, cart):
 @pytest.mark.django_db
 @pytest.mark.parametrize('quantity' , [200, -1, 0])
 def test_adding_with_invalid_quantity_is_rejected(api_client, cart, product, quantity):
-    response = api_client.post(get_list_url(cart),
-                               get_data(product.id , quantity=quantity),
+    response = api_client.post(helper.get_list_url(cart),
+                               helper.get_data(product.id , quantity=quantity),
                                format='json'
                                )
     assert response.status_code == 400
@@ -96,7 +76,7 @@ def test_adding_past_100_in_total_is_rejected(api_client, cart, product):
     item = baker.make(models.CartItem, cart=cart, product=product, quantity=80)
 
     # 80 already in the cart + 30 more = 110; 30 alone is fine, the total isn't
-    response = api_client.post(get_list_url(cart), get_data(product.pk, quantity=30), format='json')
+    response = api_client.post(helper.get_list_url(cart), helper.get_data(product.pk, quantity=30), format='json')
 
     assert response.status_code == 400
     assert 'quantity' in response.data
