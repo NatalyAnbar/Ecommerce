@@ -21,5 +21,5 @@ cart_items_nested_router.register(
 urlpatterns = [
     path('',include(router.urls)),
     path('',include(cart_items_nested_router.urls)),
-    path('mergeCart/',views.MergeCartView.as_view())
+    path('mergeCart/',views.MergeCartView.as_view(),name='merge')
 ]
