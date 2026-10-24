@@ -5,9 +5,11 @@ from django.core.management import call_command
 from django.contrib.auth.models import Group
 
 
+pytestmark = pytest.mark.django_db
+
 User = get_user_model()
 
-@pytest.mark.django_db
+
 def test_product_managers_role_has_expected_permissions():
 
     """The Product Managers group grants catalog management except deleting categories."""
@@ -26,7 +28,7 @@ def test_product_managers_role_has_expected_permissions():
 
     
 
-@pytest.mark.django_db
+
 def test_regular_user_has_no_catalog_permissions():
 
     """A user outside any staff group cannot manage the catalog."""

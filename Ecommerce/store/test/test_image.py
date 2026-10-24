@@ -9,6 +9,9 @@ from store.test import helper
 from django.urls import reverse
 
 
+pytestmark = pytest.mark.django_db
+
+
 def get_product_image_url_list(product):
     """URL for listing a product's images."""
     return reverse('product-images-list',kwargs={'product_slug':product.slug})
@@ -29,7 +32,7 @@ def prepare():
     return category,url
 
 
-@pytest.mark.django_db
+
 @pytest.mark.parametrize(
     'image_kwargs',[
     {},                                  # default size and PNG
@@ -56,7 +59,7 @@ def test_upload_valid_image_returns_201(api_client,authenticate,image_kwargs):
     assert product.images.count() == 1
 
 
-@pytest.mark.django_db
+
 @pytest.mark.parametrize(
     'image_kwargs', [
     {'width': 100, 'height': 100},       # too small
@@ -85,7 +88,7 @@ def test_upload_invalid_image_returns_400(api_client, authenticate, image_kwargs
     assert not models.Product.objects.exists()
 
 
-@pytest.mark.django_db
+
 def test_more_than_8_images(api_client,authenticate):
     """The product must not be saved either, so a retry doesn't create a duplicate."""
 
@@ -109,7 +112,7 @@ def test_more_than_8_images(api_client,authenticate):
 
 # ---------------- Read -----------------------
 
-@pytest.mark.django_db
+
 def test_anyone_can_list_only_this_products_images(api_client):
     """Images of other products must not leak into the list."""
     product = baker.make(models.Product)
@@ -123,7 +126,7 @@ def test_anyone_can_list_only_this_products_images(api_client):
     assert response.data['count'] == 3
 
 
-@pytest.mark.django_db
+
 def test_anyone_can_retrieve_product_image(api_client):
     product = baker.make(models.Product)
     image = baker.make(models.ProductImage , product=product)
@@ -133,7 +136,7 @@ def test_anyone_can_retrieve_product_image(api_client):
     assert response.data['id'] == image.id
 
 
-@pytest.mark.django_db
+
 def test_retrieve_image_under_wrong_product_returns_404(api_client):
     """An image is only reachable under its own product's URL."""
     product = baker.make(models.Product)
@@ -148,7 +151,7 @@ def test_retrieve_image_under_wrong_product_returns_404(api_client):
 
 # --------------- Update ------------------
 
-@pytest.mark.django_db
+
 def test_patch_cannot_move_image_to_another_product(api_client,authenticate):
     """The request succeeds, but the product field is ignored."""
 
@@ -168,7 +171,7 @@ def test_patch_cannot_move_image_to_another_product(api_client,authenticate):
     assert image.product == product
 
 
-@pytest.mark.django_db
+
 def test_patch_updates_image_title(api_client,authenticate):
     """Titles stay editable after upload, without re-uploading the file."""
     authenticate('change_productimage')
@@ -188,7 +191,7 @@ def test_patch_updates_image_title(api_client,authenticate):
     assert image.title_en == 'samsung'
 
 
-@pytest.mark.django_db
+
 def test_patch_replaces_image_file(api_client,authenticate):
     """A new file can replace the old one without deleting the image record."""
     authenticate('change_productimage')
@@ -209,7 +212,7 @@ def test_patch_replaces_image_file(api_client,authenticate):
 
 
 # ---------------- Delete ------------
-@pytest.mark.django_db
+
 def test_admin_can_delete_product_image(api_client,authenticate):
     authenticate('delete_productimage')
     image = baker.make(models.ProductImage)
@@ -220,7 +223,7 @@ def test_admin_can_delete_product_image(api_client,authenticate):
     assert not models.ProductImage.objects.filter(id=image.id).exists()
 
 
-@pytest.mark.django_db
+
 def test_anonymous_user_cannot_delete_product_image(api_client):
     image = baker.make(models.ProductImage, img=helper.make_image())
 
@@ -231,7 +234,7 @@ def test_anonymous_user_cannot_delete_product_image(api_client):
     assert models.ProductImage.objects.filter(id=image.id).exists()
 
 
-@pytest.mark.django_db
+
 def test_user_without_permission_cannot_delete_product_image(api_client, authenticate):
     authenticate()
     image = baker.make(models.ProductImage, img=helper.make_image())

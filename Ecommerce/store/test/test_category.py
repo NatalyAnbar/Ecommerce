@@ -4,6 +4,9 @@ from store import models
 from django.urls import reverse
 
 
+pytestmark = pytest.mark.django_db
+
+
 def category_detail(category):
     """Return the detail endpoint URL for the given category (lookup by slug)."""
 
@@ -21,7 +24,7 @@ def valid_category_payload():
 # Read: public access
 # ============================================================
 
-@pytest.mark.django_db
+
 def test_anyone_can_list_categories(api_client):
     """Anonymous users can retrieve the category list."""
 
@@ -33,7 +36,7 @@ def test_anyone_can_list_categories(api_client):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
+
 def test_anyone_can_retrieve_category_by_slug(api_client):
     """Anonymous users can retrieve a single category by its slug."""
 
@@ -50,7 +53,7 @@ def test_anyone_can_retrieve_category_by_slug(api_client):
 # Create
 # ============================================================
 
-@pytest.mark.django_db
+
 def test_anonymous_user_cannot_create_category(api_client):
     """Unauthenticated users are rejected when creating a category."""
 
@@ -61,7 +64,7 @@ def test_anonymous_user_cannot_create_category(api_client):
     assert respone.status_code in [401,403]
 
 
-@pytest.mark.django_db
+
 def test_user_with_add_permission_can_create_category(api_client,authenticate):
     """Users with 'add_category' permission can create a category."""
 
@@ -79,7 +82,7 @@ def test_user_with_add_permission_can_create_category(api_client,authenticate):
 # Update
 # ============================================================
 
-@pytest.mark.django_db
+
 def test_user_with_change_permission_can_update_category(api_client,authenticate):
     """PUT with all fields replaces both translated names."""
 
@@ -96,7 +99,7 @@ def test_user_with_change_permission_can_update_category(api_client,authenticate
     assert category.name_ar == 'الكترونيات'
 
 
-@pytest.mark.django_db
+
 def test_anonymous_user_cannot_update_category(api_client):
     """Unauthenticated users are rejected when updating a category."""
 
@@ -113,7 +116,7 @@ def test_anonymous_user_cannot_update_category(api_client):
 # Delete
 # ============================================================
 
-@pytest.mark.django_db
+
 def test_user_with_delete_permission_can_delete_category(api_client,authenticate):
     """Users with 'delete_category' permission can delete a category."""
 
@@ -127,7 +130,7 @@ def test_user_with_delete_permission_can_delete_category(api_client,authenticate
     assert not models.Category.objects.filter(slug=category.slug).exists()
 
 
-@pytest.mark.django_db
+
 def test_anonymous_user_cannot_delete_category(api_client):
     """Unauthenticated users are rejected when deleting a category."""
 

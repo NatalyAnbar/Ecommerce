@@ -10,6 +10,9 @@ from model_bakery import baker
 from cart import models
 from store.models import Product
 
+
+pytestmark = pytest.mark.django_db
+
 User = get_user_model()
 
 
@@ -23,7 +26,7 @@ def guest_cart():
     return baker.make(models.Cart, user=None)
 
 
-@pytest.mark.django_db
+
 def test_merge_moves_items_into_the_users_cart(api_client, authenticate, guest_cart):
     user = authenticate()
     user_cart = baker.make(models.Cart, user=user)
@@ -37,7 +40,7 @@ def test_merge_moves_items_into_the_users_cart(api_client, authenticate, guest_c
     assert user_cart.cart_items.count() == 5
 
 
-@pytest.mark.django_db
+
 def test_merge_deletes_the_anonymous_cart(api_client, authenticate, guest_cart):
     authenticate()
     baker.make(models.CartItem, cart=guest_cart, _quantity=3)
@@ -48,7 +51,7 @@ def test_merge_deletes_the_anonymous_cart(api_client, authenticate, guest_cart):
     assert not models.Cart.objects.filter(pk=guest_cart.pk).exists()
 
 
-@pytest.mark.django_db
+
 def test_merge_creates_a_cart_if_the_user_has_none(api_client, authenticate, guest_cart):
     user = authenticate()
     baker.make(models.CartItem, cart=guest_cart, _quantity=3)
@@ -60,7 +63,7 @@ def test_merge_creates_a_cart_if_the_user_has_none(api_client, authenticate, gue
     assert user_cart.cart_items.count() == 3
 
 
-@pytest.mark.django_db
+
 def test_merge_adds_up_a_product_in_both_carts(api_client, authenticate, guest_cart):
     user = authenticate()
     product = baker.make(Product)
@@ -76,7 +79,7 @@ def test_merge_adds_up_a_product_in_both_carts(api_client, authenticate, guest_c
     assert line.quantity == 5
 
 
-@pytest.mark.django_db
+
 def test_merge_caps_the_combined_quantity_at_100(api_client, authenticate, guest_cart):
     user = authenticate()
     product = baker.make(Product)
@@ -90,7 +93,7 @@ def test_merge_caps_the_combined_quantity_at_100(api_client, authenticate, guest
     assert user_cart.cart_items.get().quantity == 100
 
 
-@pytest.mark.django_db
+
 def test_merge_requires_login(api_client, guest_cart):
     baker.make(models.CartItem, cart=guest_cart)
 
@@ -101,7 +104,7 @@ def test_merge_requires_login(api_client, guest_cart):
     assert guest_cart.cart_items.count() == 1
 
 
-@pytest.mark.django_db
+
 @pytest.mark.parametrize(
     'body',
     [{}, {'cart_id': '999'}, {'cart_id': 'abc'}],
@@ -116,7 +119,7 @@ def test_merge_rejects_a_missing_or_malformed_cart_id(api_client, authenticate, 
     assert 'cart_id' in response.data
 
 
-@pytest.mark.django_db
+
 def test_merge_returns_404_for_an_unknown_cart(api_client, authenticate):
     authenticate()
 
@@ -126,7 +129,7 @@ def test_merge_returns_404_for_an_unknown_cart(api_client, authenticate):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
+
 def test_merge_cannot_take_another_users_cart(api_client, authenticate):
     authenticate()
     others_cart = baker.make(models.Cart, user=baker.make(User))

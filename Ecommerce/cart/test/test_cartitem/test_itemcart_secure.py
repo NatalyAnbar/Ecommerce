@@ -4,9 +4,12 @@
 import pytest
 from django.contrib.auth import get_user_model
 from model_bakery import baker
-
 from cart import models
 from cart.test.test_cartitem import helper
+
+
+pytestmark = pytest.mark.django_db
+
 
 User = get_user_model()
 
@@ -23,14 +26,14 @@ def others_item(others_cart, product):
     return baker.make(models.CartItem, cart=others_cart, product=product, quantity=5)
 
 
-@pytest.mark.django_db
+
 def test_anonymous_user_cannot_read_a_users_cart_items(api_client, others_cart):
     response = api_client.get(helper.get_list_url(others_cart))
 
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
+
 def test_user_cannot_read_another_users_cart_items(api_client, authenticate, others_cart):
     authenticate()
 
@@ -39,7 +42,7 @@ def test_user_cannot_read_another_users_cart_items(api_client, authenticate, oth
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
+
 def test_user_cannot_add_to_another_users_cart(api_client, authenticate, others_cart, product):
     authenticate()
 
@@ -51,7 +54,7 @@ def test_user_cannot_add_to_another_users_cart(api_client, authenticate, others_
     assert models.CartItem.objects.filter(cart=others_cart).count() == 0
 
 
-@pytest.mark.django_db
+
 def test_user_cannot_edit_another_users_cart_item(api_client, authenticate, others_cart, others_item):
     authenticate()
 
@@ -64,7 +67,7 @@ def test_user_cannot_edit_another_users_cart_item(api_client, authenticate, othe
     assert others_item.quantity == 5
 
 
-@pytest.mark.django_db
+
 def test_user_cannot_delete_another_users_cart_item(api_client, authenticate, others_cart, others_item):
     authenticate()
 

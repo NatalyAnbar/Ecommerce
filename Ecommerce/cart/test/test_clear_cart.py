@@ -5,6 +5,8 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 
 
+pytestmark = pytest.mark.django_db
+
 User = get_user_model()
 
 
@@ -12,7 +14,7 @@ def get_url(cart):
     return reverse('cart-clear', kwargs={'pk': str(cart.id)})
 
 
-@pytest.mark.django_db
+
 def test_clearing_empties_the_cart_but_keeps_it(api_client):
     cart = baker.make(models.Cart)
     baker.make(models.CartItem , _quantity=5 , cart=cart)
@@ -24,7 +26,7 @@ def test_clearing_empties_the_cart_but_keeps_it(api_client):
     assert models.Cart.objects.filter(pk=cart.pk).exists()
 
 
-@pytest.mark.django_db
+
 def test_user_cannot_clear_another_users_cart(api_client, authenticate):
     authenticate()
     others_cart = baker.make(models.Cart, user=baker.make(User))

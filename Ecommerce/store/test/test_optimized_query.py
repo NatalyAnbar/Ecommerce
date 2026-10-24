@@ -3,7 +3,10 @@ from model_bakery import baker
 from django.urls import reverse
 from store import models
 
-@pytest.mark.django_db
+
+pytestmark = pytest.mark.django_db
+
+
 def test_category_list_avoids_n_plus_one_queries(api_client , django_assert_num_queries):
     """
     Listing categories with nested products and images runs a fixed number of queries.
