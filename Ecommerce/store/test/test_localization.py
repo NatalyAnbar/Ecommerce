@@ -3,8 +3,10 @@ from django.urls import reverse
 from model_bakery import baker 
 from store import models
 
+
+pytestmark = pytest.mark.django_db
+
     
-@pytest.mark.django_db
 def test_category_name_follows_accept_language_header(api_client):
     """The localized category name matches the language requested by the client."""
 
@@ -18,7 +20,6 @@ def test_category_name_follows_accept_language_header(api_client):
     assert response_ar.data['name'] == 'الكترونيات'
 
 
-@pytest.mark.django_db
 def test_category_name_falls_back_to_default_language(api_client):
     """Unsupported languages fall back to the default language (English)"""
 
@@ -30,7 +31,6 @@ def test_category_name_falls_back_to_default_language(api_client):
     assert response.data['name'] == 'Electronics'
 
 
-@pytest.mark.django_db
 def test_product_fields_follow_accept_language_header(api_client):
     """Localized product name and description match the requested language."""
 

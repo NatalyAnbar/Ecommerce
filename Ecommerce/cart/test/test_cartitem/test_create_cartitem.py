@@ -7,7 +7,10 @@ from cart import models
 from cart.test.test_cartitem import helper
 
 
-@pytest.mark.django_db
+pytestmark = pytest.mark.django_db
+
+
+
 def test_adding_a_product_creates_an_item(api_client, cart, product):
     response = api_client.post(
                                helper.get_list_url(cart),
@@ -19,7 +22,7 @@ def test_adding_a_product_creates_an_item(api_client, cart, product):
     assert item.quantity == 5
 
 
-@pytest.mark.django_db
+
 def test_quantity_defaults_to_one(api_client, cart, product):
     response = api_client.post(
                                helper.get_list_url(cart),
@@ -32,7 +35,7 @@ def test_quantity_defaults_to_one(api_client, cart, product):
     assert item.quantity == 1
 
 
-@pytest.mark.django_db
+
 def test_adding_the_same_product_raises_its_quantity(api_client, cart, product):
     baker.make(models.CartItem, cart=cart, product=product, quantity=10)
     response = api_client.post(
@@ -48,7 +51,7 @@ def test_adding_the_same_product_raises_its_quantity(api_client, cart, product):
     assert models.CartItem.objects.get(cart=cart, product=product).quantity == 15
 
 
-@pytest.mark.django_db
+
 def test_adding_a_missing_product_is_rejected(api_client, cart):
     response = api_client.post(helper.get_list_url(cart),
                                helper.get_data(999),
@@ -59,7 +62,7 @@ def test_adding_a_missing_product_is_rejected(api_client, cart):
     assert models.CartItem.objects.count() == 0
 
 
-@pytest.mark.django_db
+
 @pytest.mark.parametrize('quantity' , [200, -1, 0])
 def test_adding_with_invalid_quantity_is_rejected(api_client, cart, product, quantity):
     response = api_client.post(helper.get_list_url(cart),
@@ -71,7 +74,7 @@ def test_adding_with_invalid_quantity_is_rejected(api_client, cart, product, qua
     assert models.CartItem.objects.count() == 0
 
 
-@pytest.mark.django_db
+
 def test_adding_past_100_in_total_is_rejected(api_client, cart, product):
     item = baker.make(models.CartItem, cart=cart, product=product, quantity=80)
 

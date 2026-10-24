@@ -7,7 +7,10 @@ from cart import models
 from cart.test.test_cartitem import helper
 
 
-@pytest.mark.django_db
+pytestmark = pytest.mark.django_db
+
+
+
 def test_editing_sets_the_new_quantity(api_client, cart, product, item):
     response = api_client.patch(
                                helper.get_detail_url(cart , item),
@@ -19,7 +22,7 @@ def test_editing_sets_the_new_quantity(api_client, cart, product, item):
     assert item.quantity == 10
 
 
-@pytest.mark.django_db
+
 def test_editing_cannot_switch_the_product(api_client, cart, product, item):
     other_product = baker.make(models.Product)
     response = api_client.patch(
@@ -32,7 +35,7 @@ def test_editing_cannot_switch_the_product(api_client, cart, product, item):
     assert item.product == product
 
 
-@pytest.mark.django_db
+
 @pytest.mark.parametrize('quantity' , [-5 , 0 , 150])
 def test_editing_with_invalid_quantity_is_rejected(api_client, cart, product, quantity, item):
     response = api_client.patch(
@@ -45,7 +48,7 @@ def test_editing_with_invalid_quantity_is_rejected(api_client, cart, product, qu
     assert item.quantity == 5
 
 
-@pytest.mark.django_db
+
 def test_put_is_not_allowed(api_client, cart, product, item):
     # PUT would require product_id on every edit; quantity changes use PATCH
     response = api_client.put(

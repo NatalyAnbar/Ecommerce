@@ -6,6 +6,8 @@ from django.urls import reverse
 from accounts import models
 
 
+pytestmark = pytest.mark.django_db
+
 OLD_PASSWORD = 'test@1234'
 NEW_PASSWORD = '1234@test'
 
@@ -66,7 +68,7 @@ def user(api_client):
     return user
 
 
-@pytest.mark.django_db
+
 def test_user_can_change_password(api_client , user):
 
     response = api_client.put(get_url() , get_data() , format='json')
@@ -76,7 +78,7 @@ def test_user_can_change_password(api_client , user):
     assert user.check_password(NEW_PASSWORD)
 
 
-@pytest.mark.django_db
+
 def test_anonymous_user_cannot_change_password(api_client):
     """ Created without logging in, so the request has no token """
 
@@ -88,7 +90,7 @@ def test_anonymous_user_cannot_change_password(api_client):
     assert user.check_password(OLD_PASSWORD)
 
 
-@pytest.mark.django_db
+
 def test_patch_is_not_allowed(api_client, user):
     """ PATCH would make the fields optional, so the view only accepts PUT """
     response = api_client.patch(get_url() , get_data() , format='json')
@@ -98,7 +100,7 @@ def test_patch_is_not_allowed(api_client, user):
     assert user.check_password(OLD_PASSWORD)
 
 
-@pytest.mark.django_db
+
 @pytest.mark.parametrize('data, error_field',
                          INVALID_CHANGES)
 

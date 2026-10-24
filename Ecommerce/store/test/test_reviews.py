@@ -5,6 +5,9 @@ from store import models
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 
+
+pytestmark = pytest.mark.django_db
+
 User = get_user_model()
 
 def reviews_detail_url(product , review):
@@ -20,8 +23,6 @@ def reviews_list_url(product):
 
 # ---------- Model constraints ----------
 
-
-@pytest.mark.django_db
 def test_user_cannot_review_same_product_twice():
     """The database rejects a second review by the same user for the same product."""
 
@@ -33,8 +34,6 @@ def test_user_cannot_review_same_product_twice():
     with pytest.raises(IntegrityError):
         baker.make(models.Review, user=user, product=product)
 
-
-@pytest.mark.django_db
 def test_user_can_review_different_products():
     """The unique constraint is per product, so one user can review many products."""
 
@@ -52,8 +51,6 @@ def test_user_can_review_different_products():
 
 # ---------- Read access ----------
 
-
-@pytest.mark.django_db
 def test_anonymous_user_can_read_product_reviews(api_client):
     """Anyone can list a product's reviews"""
 
@@ -70,8 +67,6 @@ def test_anonymous_user_can_read_product_reviews(api_client):
 # ---------- Write access ----------
 
 
-
-@pytest.mark.django_db
 def test_anonymous_user_cannot_create_review(api_client):
     """Unauthenticated users get 401 and nothing is saved."""
 
@@ -81,8 +76,6 @@ def test_anonymous_user_cannot_create_review(api_client):
     assert response.status_code == 401
     assert not models.Review.objects.exists()
 
-
-@pytest.mark.django_db
 def test_authenticated_user_can_create_review(api_client, authenticate):
     """The review is saved with the requesting user and the product from the URL."""
     user = authenticate()
@@ -95,8 +88,6 @@ def test_authenticated_user_can_create_review(api_client, authenticate):
     assert review.user == user
     assert review.product == product
 
-
-@pytest.mark.django_db
 def test_owner_can_update_own_review(api_client, authenticate):
     """The author can edit their review."""
 
@@ -114,8 +105,6 @@ def test_owner_can_update_own_review(api_client, authenticate):
     review.refresh_from_db()
     assert review.rating == 5
 
-
-@pytest.mark.django_db
 def test_reviews_show_the_reviewers_first_name_not_their_email(api_client):
     user = baker.make(User , email='test@gmail.com' , first_name='test')
     product = baker.make(models.Product)

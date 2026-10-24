@@ -6,7 +6,9 @@ from cart import models
 from cart.test.test_cartitem import helper
 
 
-@pytest.mark.django_db
+pytestmark = pytest.mark.django_db
+
+
 def test_deleting_removes_only_that_line(api_client, cart, product):
     item = baker.make(models.CartItem, cart=cart, product=product)
     other_item = baker.make(models.CartItem, cart=cart)

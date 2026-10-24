@@ -5,6 +5,9 @@ from django.urls import reverse
 from model_bakery import baker 
 from accounts import models
 
+
+pytestmark = pytest.mark.django_db
+
 def register_url():
     return reverse('register-list')
 
@@ -19,7 +22,7 @@ def get_data(**extra_fields):
     } | extra_fields
 
 
-@pytest.mark.django_db
+
 def test_register_creates_user_with_hashed_password(api_client):
 
     url = register_url()
@@ -33,7 +36,7 @@ def test_register_creates_user_with_hashed_password(api_client):
     assert user.password != 'blabla@123'
 
 
-@pytest.mark.django_db()
+
 @pytest.mark.parametrize('kwargs',[
     {'password':'ttoott@@12@' , 'confirm_password':'ttoott@@1'},
     {'password':'nat@','confirm_password':'nat@'},
@@ -52,7 +55,7 @@ def test_register_with_invalid_password_returns_400(api_client,kwargs):
     assert not models.User.objects.exists()
 
 
-@pytest.mark.django_db
+
 def test_register_with_existing_email_returns_400(api_client):
     """Emails are compared case-insensitively, even for accounts saved before lowercasing."""
 
@@ -65,7 +68,7 @@ def test_register_with_existing_email_returns_400(api_client):
     assert models.User.objects.count() == 1
 
 
-@pytest.mark.django_db
+
 def test_register_ignores_admin_flags(api_client):
     """A client can't make itself staff or superuser."""
     url = register_url() 

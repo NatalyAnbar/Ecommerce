@@ -5,13 +5,15 @@ from store.test import helper
 from store import models
 
 
+pytestmark = pytest.mark.django_db
+
+
 def product_detail_url(product):
     return reverse('product-detail', kwargs={'slug': product.slug})
 
 
 # ------------ create -----------------------
 
-@pytest.mark.django_db
 def test_product_manager_can_create_product_with_images(api_client,authenticate):
     """Users with add_product can create a product, and its uploaded images are saved."""
 
@@ -30,7 +32,6 @@ def test_product_manager_can_create_product_with_images(api_client,authenticate)
     assert product.images.count() == 2
 
 
-@pytest.mark.django_db
 def test_anonymous_user_cannot_create_product(api_client):
     """Unauthenticated users get 401 and nothing is saved."""
 
@@ -46,7 +47,6 @@ def test_anonymous_user_cannot_create_product(api_client):
 
 # --------------- Read -----------
 
-@pytest.mark.django_db
 def test_anyone_can_list_products(api_client):
     """The product list is public and returns every product."""
 
@@ -58,7 +58,6 @@ def test_anyone_can_list_products(api_client):
     assert response.data['count'] == 5
 
 
-@pytest.mark.django_db
 def test_anyone_can_retrieve_product_by_slug(api_client):
     """A single product is public and looked up by its slug."""
 
@@ -72,7 +71,6 @@ def test_anyone_can_retrieve_product_by_slug(api_client):
 
 # ----------- Update -----------
 
-@pytest.mark.django_db
 def test_product_manager_can_update_product(api_client,authenticate):
     """Users with change_product can replace a product's data."""
 
@@ -91,7 +89,6 @@ def test_product_manager_can_update_product(api_client,authenticate):
     assert product.name_en == 'Ferrari'
 
 
-@pytest.mark.django_db
 def test_anonymous_user_cannot_update_product(api_client):
     """Unauthenticated users get 401 and the product is unchanged."""
 
@@ -112,7 +109,6 @@ def test_anonymous_user_cannot_update_product(api_client):
 # -------------- Delete ------------
 
 
-@pytest.mark.django_db
 def test_product_manager_can_delete_product(api_client,authenticate):
     """Users with delete_product can delete a product."""
 
@@ -126,7 +122,6 @@ def test_product_manager_can_delete_product(api_client,authenticate):
     assert not models.Product.objects.filter(slug=product.slug).exists()
 
 
-@pytest.mark.django_db
 def test_anonymous_user_cannot_delete_product(api_client):
     """Unauthenticated users get 401 and the product still exists."""
 

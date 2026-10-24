@@ -5,7 +5,9 @@ from itertools import cycle
 from store import models
 
 
-@pytest.mark.django_db
+pytestmark = pytest.mark.django_db
+
+
 def test_products_can_be_filtered_by_price_range(api_client):
     """Only products priced within the requested range are returned."""
     
