@@ -4,6 +4,7 @@ Django settings for Ecommerce project.
 
 from pathlib import Path
 from datetime import timedelta 
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,13 +13,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-y6z&(sku=uc)7%l@2+=vr4#vn=+255%1@ugdwq7(9_x_7#alss'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Read settings from the .env file.
+env = environ.Env()
+environ.Env.read_env(BASE_DIR / '.env')
 
-ALLOWED_HOSTS = []
+
+# No default on purpose: if it's missing, Django should fail loudly.
+SECRET_KEY = env('SECRET_KEY')
+
+
+DEBUG = env.bool('DEBUG',default=False)
+
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS',default=[])
 
 
 # Application definition
