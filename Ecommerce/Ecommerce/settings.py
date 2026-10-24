@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'drf_spectacular',
+    'rest_framework_simplejwt.token_blacklist',
 
     # Internal Core Subsystems
     'store',
@@ -134,6 +135,12 @@ SPECTACULAR_SETTINGS = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+
+    # Every refresh returns a new refresh token...
+    'ROTATE_REFRESH_TOKENS': True,
+    # ...and the old one stops working, so a stolen token can only be used once.
+    'BLACKLIST_AFTER_ROTATION': True,
+
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
