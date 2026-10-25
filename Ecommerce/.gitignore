@@ -24,4 +24,7 @@ media/
 Thumbs.db
 
 
+# Local database and generated files
+db.sqlite3
+.pytest_cache/
 schema.yml
