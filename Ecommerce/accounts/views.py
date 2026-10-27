@@ -1,5 +1,7 @@
 from rest_framework import generics, mixins, permissions
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework_simplejwt.views import TokenObtainPairView
 from . import models,Serializers
 
 class RegisterUser(mixins.CreateModelMixin , GenericViewSet):
@@ -38,3 +40,10 @@ class ChangePasswordView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class LoginView(TokenObtainPairView):
+    """Log in with email and password; limited to stop password guessing."""
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'login'

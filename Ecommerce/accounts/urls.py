@@ -11,7 +11,7 @@ urlpatterns = [
     path('',include(rouetr.urls)),
 
 
-    path('login/',TokenObtainPairView.as_view(),name='login'),
+    path('login/',views.LoginView.as_view(),name='login'),
     path('refreshtoken/',TokenRefreshView.as_view(),name='refresh'),
     path('logout/',TokenBlacklistView.as_view(),name='logout'),
 
