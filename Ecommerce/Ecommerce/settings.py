@@ -113,6 +113,19 @@ REST_FRAMEWORK = {
     ),
 
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
+    # Rate limits: anonymous visitors are counted by IP, signed-in users by account.
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',
+        'user': '1000/hour',
+        # Custom scope for the login view: low enough to stop password guessing.
+        'login': '5/minute',
+    },
 }
 
 

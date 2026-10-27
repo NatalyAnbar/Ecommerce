@@ -3,6 +3,7 @@ from rest_framework.test import APIClient
 from model_bakery import baker
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from django.core.cache import cache
 
 User = get_user_model()
 
@@ -34,3 +35,9 @@ def authenticate(api_client):
 def temp_media_root(settings, tmp_path):
     """Save uploaded files to a temporary folder so tests don't fill the real media folder."""
     settings.MEDIA_ROOT = tmp_path
+
+
+@pytest.fixture(autouse=True)
+def clear_throttle_cache():
+    """Rate limits count in the cache; reset them so each test starts fresh."""
+    cache.clear()
