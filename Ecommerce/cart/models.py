@@ -23,6 +23,10 @@ class Cart(models.Model):
         items = self.cart_items.all()
         return sum(item.total_price for item in items)
 
+    def clear_cart(self):
+        """Remove every item from the cart."""
+        return self.cart_items.all().delete()
+    
 
 class CartItem(models.Model):
     """One product in a cart and how many of it."""
@@ -47,6 +51,9 @@ class CartItem(models.Model):
     def total_price(self):
         """Price of this line at the product's current price."""
         return self.product.price * self.quantity
+
+
+
 
 
 

@@ -38,7 +38,7 @@ class CartView(ModelViewSet):
         """Empty the cart but keep it: DELETE /carts/<id>/clear/."""
         # get_object applies the same rule as everywhere else: your cart, or an anonymous one
         cart = self.get_object()
-        cart.cart_items.all().delete()
+        cart.clear_cart()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

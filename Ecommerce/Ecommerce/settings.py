@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     # Internal Core Subsystems
     'store',
     'accounts',
-    'cart'
+    'cart',
+    'order'
 ]
 
 MIDDLEWARE = [
