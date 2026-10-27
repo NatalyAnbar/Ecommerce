@@ -35,12 +35,12 @@ def auth_client(api_client, user):
 
 @pytest.fixture
 def product():
-    return baker.make(Product, name_en='Milk', price=5)
+    return baker.make(Product, name_en='Milk', price=5, stock=10)
 
 
 @pytest.fixture
 def other_product():
-    return baker.make(Product, name_en='T-shirt', price=50)
+    return baker.make(Product, name_en='T-shirt', price=50, stock=10)
 
 
 # ---------- cart ----------
