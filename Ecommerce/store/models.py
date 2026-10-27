@@ -48,6 +48,8 @@ class Product(models.Model):
                                 max_digits=7, 
                                 decimal_places=2, 
                                 db_index=True)
+    # How many units are available to sell.
+    stock = models.PositiveIntegerField(default=0)
 
     class Meta:
         # A fixed order keeps paginated results stable

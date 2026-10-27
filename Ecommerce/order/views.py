@@ -6,6 +6,7 @@ from django.db import transaction
 from rest_framework.response import Response
 from . import serializers , models
 from cart.models import Cart
+from django.db.models import F
 
 
 class OrderView(ReadOnlyModelViewSet):
@@ -29,20 +30,39 @@ class OrderView(ReadOnlyModelViewSet):
                 {'detail': 'Your cart is empty.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
-        cart_items = user_cart.cart_items.select_related('product')
 
         # All or nothing: if anything fails, no half-made order is left behind.
         with transaction.atomic():
+
+            # Hold these products until we finish, so no one else can buy the same last unit.
+            cart_items = list(user_cart
+                              .cart_items
+                              .select_related('product')
+                              .select_for_update(of=('product',)))
+
+            # Check everything before writing anything.
+            if unavailable := [
+                item.product.name_en 
+                for item in cart_items 
+                if item.product.stock < item.quantity
+                ]:
+                return Response(
+                                {'detail': 'Not enough stock.', 'products': unavailable},
+                                status=status.HTTP_400_BAD_REQUEST,
+                                )
+
             order = models.Order.objects.create(user=request.user)
+            
             for item in cart_items:
-                models.OrderItem.objects.create(
+                models.OrderItem.objects.create (
                     order=order,
                     product=item.product,
                     quantity=item.quantity,
                     # Snapshot of today's price, so later changes don't affect this order.
                     unit_price=item.product.price
-                )
+                        )
+                
+                models.Product.objects.filter(id=item.product.id).update(stock=F('stock')-item.quantity)
 
             user_cart.clear_cart()
 
@@ -62,8 +82,12 @@ class OrderView(ReadOnlyModelViewSet):
                 {'detail': 'Only pending orders can be cancelled.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
-        order.status = models.Order.Status.CANCELLED
-        order.save(update_fields=['status'])
+
+        with transaction.atomic():
+            # The status and the stock change together, or not at all.
+            for item in order.order_items.all():
+                models.Product.objects.filter(id=item.product.id).update(stock=F('stock') + item.quantity)
+            order.status = models.Order.Status.CANCELLED
+            order.save(update_fields=['status'])
 
         return Response(serializers.OrderSerializer(order).data)
