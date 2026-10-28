@@ -1,0 +1,56 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # The Django project lives in the Ecommerce/ folder of the repo.
+    defaults:
+      run:
+        working-directory: Ecommerce
+
+    # A throwaway Postgres for the tests, like docker-compose's db service.
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ecommerce
+          POSTGRES_USER: ecommerce
+          POSTGRES_PASSWORD: ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # CI has no .env file, so the settings come from here. None of these are real secrets.
+    env:
+      SECRET_KEY: ci-only-not-secret
+      DEBUG: 'False'
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      DATABASE_URL: postgres://ecommerce:ci-password@127.0.0.1:5432/ecommerce
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: Ecommerce/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check for missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        run: pytest
