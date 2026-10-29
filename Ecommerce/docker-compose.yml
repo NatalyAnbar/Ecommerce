@@ -8,11 +8,34 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
+    # Postgres data lives in a Docker volume, so it survives the container.
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    
+    # Lets other services know when Postgres is ready.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    # Gate 8000 on my computer leads to Django inside the container.
+    ports:
+      - "8000:8000"
+    # Secrets are handed in at run time, never baked into the image.
+    env_file:
+      - .env
+    environment:
+      # Inside Docker, Postgres is reached by its service name, not 127.0.0.1.
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    # Start Django only after Postgres says it's ready.
+    depends_on:
+      db:
+        condition: service_healthy
+    # Mirror my code folder, so edits show up without rebuilding.
+    volumes:
+      - .:/app
 
 volumes:
   postgres_data:
-    
-      
