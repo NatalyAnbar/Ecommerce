@@ -1,0 +1,16 @@
+# Secrets: never bake them into the image.
+.env
+
+# Python leftovers
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local files that don't belong in the image
+db.sqlite3
+schema.yml
+store/media/
+
+# Docker files themselves
+Dockerfile
+.dockerignore
