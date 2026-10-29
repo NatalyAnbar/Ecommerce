@@ -16,6 +16,11 @@ class OrderView(ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        
+        # Swagger builds the docs with a fake request; give it an empty queryset.
+        if getattr(self, 'swagger_fake_view', False):
+            return models.Order.objects.none()
+        
         return models.Order.objects.filter(user=self.request.user).prefetch_related('order_items__product')
 
 

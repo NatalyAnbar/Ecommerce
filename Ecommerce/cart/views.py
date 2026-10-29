@@ -6,6 +6,13 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+
+
+@extend_schema(parameters=[
+    OpenApiParameter('cart_pk', OpenApiTypes.UUID, OpenApiParameter.PATH),
+])
 
 
 class CartView(ModelViewSet):
@@ -57,7 +64,13 @@ class CartItemView(ModelViewSet):
         owner = user if user.is_authenticated else None
         return get_object_or_404(models.Cart, pk=self.kwargs['cart_pk'], user=owner)
 
+
     def get_queryset(self):
+
+        # Swagger builds the docs with a fake request; give it an empty queryset.
+        if getattr(self, 'swagger_fake_view', False):
+            return models.CartItem.objects.none()
+        
         # Checking the cart first turns someone else's cart into a 404, not an empty list
         cart = self.get_cart()
         return models.CartItem.objects.select_related('product').filter(cart=cart)
@@ -71,7 +84,7 @@ class CartItemView(ModelViewSet):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context['cart_id'] = self.kwargs['cart_pk']
+        context['cart_id'] = self.kwargs.get('cart_pk')
         return context
 
 
