@@ -7,12 +7,8 @@ from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema, OpenApiResponse
 
-
-@extend_schema(parameters=[
-    OpenApiParameter('cart_pk', OpenApiTypes.UUID, OpenApiParameter.PATH),
-])
 
 
 class CartView(ModelViewSet):
@@ -40,6 +36,14 @@ class CartView(ModelViewSet):
             serializer.save()
 
 
+    @extend_schema(
+        summary='Clear cart',
+        request=None,
+        responses={
+            204: OpenApiResponse(description='Cart cleared.'),
+            404: OpenApiResponse(description='Cart not found.'),
+        },
+    )
     @action(detail=True , methods=['delete'])
     def clear(self, request, pk=None):
         """Empty the cart but keep it: DELETE /carts/<id>/clear/."""
