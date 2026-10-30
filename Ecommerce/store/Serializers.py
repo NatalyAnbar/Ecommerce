@@ -54,7 +54,7 @@ class ImageSerializer(TranslationMixin, serializers.ModelSerializer):
         model = models.ProductImage
         fields = ['id', 'img', 'title_en' ,'title_ar', 'title', 'is_main']
 
-    def get_title(self, obj):
+    def get_title(self, obj) -> str:
         return self.resolve_translated_value(obj, 'title')
 
 
@@ -135,10 +135,10 @@ class ProductSerializer(TranslationMixin, serializers.ModelSerializer):
                 is_main=(not has_main_image and index == 0),
             )
 
-    def get_name(self, obj):
+    def get_name(self, obj) -> str:
         return self.resolve_translated_value(obj, 'name')
 
-    def get_description(self, obj):
+    def get_description(self, obj) -> str:
         return self.resolve_translated_value(obj, 'description')
 
 
@@ -157,5 +157,5 @@ class CategorySerializer(TranslationMixin, serializers.ModelSerializer):
         model = models.Category
         fields = ['id', 'name_en', 'name_ar', 'name', 'slug', 'products']
 
-    def get_name(self, obj):
+    def get_name(self, obj) -> str:
         return self.resolve_translated_value(obj, 'name')

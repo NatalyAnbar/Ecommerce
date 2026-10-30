@@ -5,6 +5,7 @@ from django.db import models
 from accounts.models import User
 from store.models import Product
 from django.core.validators import MaxValueValidator,MinValueValidator
+from decimal import Decimal
 import uuid
 
 class Cart(models.Model):
@@ -18,7 +19,7 @@ class Cart(models.Model):
     updated_at = models.DateTimeField(auto_now=True) 
 
     @property
-    def total_price(self):
+    def total_price(self) -> Decimal:
         """Sum of every line, recalculated on each read; prefetch items in the view."""
         items = self.cart_items.all()
         return sum(item.total_price for item in items)
@@ -48,7 +49,7 @@ class CartItem(models.Model):
         return f'{self.quantity} × {self.product}'
 
     @property
-    def total_price(self):
+    def total_price(self) -> Decimal:
         """Price of this line at the product's current price."""
         return self.product.price * self.quantity
 

@@ -3,6 +3,8 @@ from . import models,Serializers,filters,store_permissions
 from django.db.models import Avg,Count
 from rest_framework import permissions
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+
 
 
 class CategoryView(ModelViewSet):
@@ -55,6 +57,10 @@ class ProductView(ModelViewSet):
     ordering_fields = ['price']
 
 
+
+@extend_schema(parameters=[
+    OpenApiParameter('product_slug', str, OpenApiParameter.PATH),
+])
 class ProductImageView(ModelViewSet):
     """
     Gallery images nested under a product: /products/<slug>/images/.
@@ -74,10 +80,18 @@ class ProductImageView(ModelViewSet):
 
     def get_queryset(self):
         """Images of the product in the URL (empty if the product doesn't exist)."""
+
+        # Swagger builds the docs with a fake request; give it an empty queryset.
+        if getattr(self, 'swagger_fake_view', False):
+            return models.ProductImage.objects.none()
+    
         product_slug = self.kwargs['product_slug']
         return models.ProductImage.objects.filter(product__slug=product_slug)
 
 
+@extend_schema(parameters=[
+    OpenApiParameter('product_slug', str, OpenApiParameter.PATH),
+])
 class ReviewView(ModelViewSet):
     """
     Reviews nested under a product: /products/<slug>/reviews/.
@@ -91,18 +105,24 @@ class ReviewView(ModelViewSet):
 
     def get_product(self):
         """The product from the URL, fetched once per request (404 if it doesn't exist)."""
+    
         product_slug = self.kwargs['product_slug']
         return get_object_or_404(models.Product , slug=product_slug)
 
 
     def get_queryset(self):
+
+        # Swagger builds the docs with a fake request; give it an empty queryset.
+        if getattr(self, 'swagger_fake_view', False):
+            return models.Review.objects.none()
+        
         return models.Review.objects.select_related('user').filter(product=self.get_product())
 
 
     def get_serializer_context(self):
         """ Pass the product from the URL so the serializer can enforce one review per user """
         context = super().get_serializer_context()
-        context['product_slug'] = self.kwargs['product_slug']
+        context['product_slug'] = self.kwargs.get('product_slug')
         return context
     
 

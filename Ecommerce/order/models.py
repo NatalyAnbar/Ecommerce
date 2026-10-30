@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.core import validators
+from decimal import Decimal
 from store.models import Product
 
 
@@ -33,7 +34,7 @@ class Order(models.Model):
         return f'Order #{self.pk} by {self.user}'
 
     @property
-    def total_price(self):
+    def total_price(self) -> Decimal:
         """Sum of all lines, using the prices saved at checkout."""
         items = self.order_items.all()
         return sum(item.total_price for item in items)
@@ -70,7 +71,7 @@ class OrderItem(models.Model):
                                     )]
 
     @property
-    def total_price(self):
+    def total_price(self) -> Decimal:
         return self.quantity * self.unit_price
 
 

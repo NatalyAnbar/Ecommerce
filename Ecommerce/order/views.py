@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from . import serializers , models
 from cart.models import Cart
 from django.db.models import F
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 
 class OrderView(ReadOnlyModelViewSet):
@@ -16,9 +17,22 @@ class OrderView(ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        
+        # Swagger builds the docs with a fake request; give it an empty queryset.
+        if getattr(self, 'swagger_fake_view', False):
+            return models.Order.objects.none()
+        
         return models.Order.objects.filter(user=self.request.user).prefetch_related('order_items__product')
 
 
+    @extend_schema(
+    summary='Create an order from the cart',
+    request=None,
+    responses={
+        201: serializers.OrderSerializer,
+        400: OpenApiResponse(description='Cart is empty or not enough stock.'),
+        },
+        )
     @action(detail=False , methods=['post'])
     def checkout(self, request):
         """Turn the user's cart into a pending order and empty the cart."""
@@ -70,6 +84,15 @@ class OrderView(ReadOnlyModelViewSet):
                          status=status.HTTP_201_CREATED)
 
 
+    @extend_schema(
+        summary='Cancel a pending order',
+        request=None,
+        responses={
+            200: serializers.OrderSerializer,
+            400: OpenApiResponse(description='Only pending orders can be cancelled.'),
+            404: OpenApiResponse(description='Order not found.'),
+        },
+    )
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
         """Cancel one of the user's pending orders."""
