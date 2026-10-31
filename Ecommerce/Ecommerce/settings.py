@@ -237,3 +237,15 @@ STORAGES = {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
 }
+
+
+# Production security: only when DEBUG is off
+if not DEBUG:
+    # Render handles HTTPS in front of Django and tells it through this header
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Cookies are only sent over HTTPS
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+# Redirect http:// to https://. Turned on in production only, through the environment
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)
