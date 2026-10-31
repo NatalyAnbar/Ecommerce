@@ -8,6 +8,9 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
 
+**Live:** [Swagger UI](https://ecommerce-api-xl6n.onrender.com/api/docs/) · [ReDoc](https://ecommerce-api-xl6n.onrender.com/api/redoc/)
+   (Free hosting: the first request after a while may take about a minute while the server wakes up.)*
+
 A complete backend for an online store, built with Django REST Framework.
 
 It covers the whole shopping journey: signing up, browsing a bilingual catalog (English and Arabic), filling a cart as a guest, merging that cart after login, and checking out into an order that updates stock safely, even when many customers buy the same product at the same moment.
@@ -240,6 +243,8 @@ python manage.py runserver
 <a id="api-documentation"></a>
 
 ## API Documentation
+
+**Live:** [Swagger UI](https://ecommerce-api-xl6n.onrender.com/api/docs/) · [ReDoc](https://ecommerce-api-xl6n.onrender.com/api/redoc/)
 
 Once the server is running:
 
