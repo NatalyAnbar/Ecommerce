@@ -22,10 +22,12 @@ environ.Env.read_env(BASE_DIR / '.env')
 # No default on purpose: if it's missing, Django should fail loudly.
 SECRET_KEY = env('SECRET_KEY')
 
-
 DEBUG = env.bool('DEBUG',default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS',default=[])
+
+# Full origins (with https://) allowed to submit forms, such as the admin login
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
 
 
 # Application definition
