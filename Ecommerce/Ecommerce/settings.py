@@ -51,6 +51,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+
+    # Serves static files (admin CSS/JS) in production, where runserver isn't used
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
 
     # Django native middleware for language translation processing
@@ -202,6 +206,8 @@ LOCALE_PATHS = [
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# collectstatic gathers every app's static files here, for whitenoise to serve
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 # Email
@@ -218,3 +224,14 @@ MAILERS = {
 import os
 MEDIA_URL = '/store/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'store', 'media')
+
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    # Compressed files with a content hash in their names, so browsers can cache them safely
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
