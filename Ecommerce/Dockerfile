@@ -20,4 +20,4 @@ COPY . .
 EXPOSE 8000
 
 # Listen on 0.0.0.0 so the browser outside the container can reach it.
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["sh","start.sh"]
