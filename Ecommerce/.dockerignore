@@ -14,3 +14,6 @@ store/media/
 # Docker files themselves
 Dockerfile
 .dockerignore
+
+# Static files
+staticfiles/

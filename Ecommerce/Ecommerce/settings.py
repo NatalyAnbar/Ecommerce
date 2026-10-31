@@ -22,10 +22,12 @@ environ.Env.read_env(BASE_DIR / '.env')
 # No default on purpose: if it's missing, Django should fail loudly.
 SECRET_KEY = env('SECRET_KEY')
 
-
 DEBUG = env.bool('DEBUG',default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS',default=[])
+
+# Full origins (with https://) allowed to submit forms, such as the admin login
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
 
 
 # Application definition
@@ -51,6 +53,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+
+    # Serves static files (admin CSS/JS) in production, where runserver isn't used
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
 
     # Django native middleware for language translation processing
@@ -202,6 +208,8 @@ LOCALE_PATHS = [
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# collectstatic gathers every app's static files here, for whitenoise to serve
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 # Email
@@ -218,3 +226,26 @@ MAILERS = {
 import os
 MEDIA_URL = '/store/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'store', 'media')
+
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    # Compressed files with a content hash in their names, so browsers can cache them safely
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
+
+# Production security: only when DEBUG is off
+if not DEBUG:
+    # Render handles HTTPS in front of Django and tells it through this header
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Cookies are only sent over HTTPS
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+# Redirect http:// to https://. Turned on in production only, through the environment
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)

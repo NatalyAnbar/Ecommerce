@@ -20,6 +20,8 @@ services:
 
   web:
     build: .
+    # Local development: runserver reloads on code changes; production uses start.sh
+    command: python manage.py runserver 0.0.0.0:8000
     # Gate 8000 on my computer leads to Django inside the container.
     ports:
       - "8000:8000"
