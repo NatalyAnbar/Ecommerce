@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from . import models
+from payment.models import Payment
 
 
 class OrderItemInline(admin.TabularInline):
@@ -8,6 +9,19 @@ class OrderItemInline(admin.TabularInline):
 
     model = models.OrderItem
     fields = ['product', 'quantity', 'unit_price', 'total_price']
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class PaymentInline(admin.TabularInline):
+    """Every payment attempt for this order, declined ones included."""
+
+    model = Payment
+    fields = ['transaction_id', 'amount', 'status', 'card_last4', 'created_at']
     readonly_fields = fields
     extra = 0
     can_delete = False
@@ -26,7 +40,7 @@ class OrderAdmin(admin.ModelAdmin):
     # Only the status can change; everything else is a record of the purchase.
     fields = ['user', 'status', 'created_at', 'total_price']
     readonly_fields = ['user', 'created_at', 'total_price']
-    inlines = [OrderItemInline]
+    inlines = [OrderItemInline, PaymentInline]
 
     def has_add_permission(self, request):
         # Orders are created by checkout, not by hand.
