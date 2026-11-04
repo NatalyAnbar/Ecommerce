@@ -140,10 +140,10 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'E-Commerce API',
     'DESCRIPTION': (
         'REST API for an e-commerce store: JWT authentication with token rotation, '
-        'products and categories, reviews, a shopping cart, and orders with '
-        'stock management and safe concurrent checkout.'
+        'products and categories, reviews, a shopping cart, orders with stock '
+        'management and safe concurrent checkout, and simulated card payments.'
     ),
-    'VERSION': '1.1.0',
+    'VERSION': '1.2.0',
     # Hide the raw schema endpoint from the docs page itself.
     'SERVE_INCLUDE_SCHEMA': False,
     # Show separate request/response shapes (e.g. product_id in, product out).
