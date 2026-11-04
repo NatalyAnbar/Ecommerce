@@ -24,6 +24,10 @@ ROLES = {
                           'view_productimage','add_productimage',
                           'change_productimage','delete_productimage'
                           ],
+                          
+    # Customer support: can look up orders and payments, but never change them
+    'Order Managers' : ['view_order','view_orderitem',
+                        'view_payment','view_user'],
 }
 
 

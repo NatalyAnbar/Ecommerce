@@ -39,9 +39,13 @@ class OrderAdmin(admin.ModelAdmin):
 
     # Only the status can change; everything else is a record of the purchase.
     fields = ['user', 'status', 'created_at', 'total_price']
-    readonly_fields = ['user', 'created_at', 'total_price']
+    readonly_fields = ['user', 'status', 'created_at', 'total_price']
     inlines = [OrderItemInline, PaymentInline]
 
     def has_add_permission(self, request):
         # Orders are created by checkout, not by hand.
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # Orders are financial records: they are cancelled, never deleted
         return False
