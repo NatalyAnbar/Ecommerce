@@ -5,6 +5,7 @@ from model_bakery import baker
 from cart.models import Cart, CartItem
 from order.models import Order, OrderItem
 from store.models import Product
+from payment.models import Payment
 
 User = get_user_model()
 
@@ -69,3 +70,17 @@ def order(user, product, other_product):
 def other_order(other_user):
     """A pending order that belongs to someone else."""
     return baker.make(Order, user=other_user)
+
+
+@pytest.fixture
+def paid_order(order):
+    """An order that went through a successful payment, as the pay endpoint leaves it."""
+    Payment.objects.create(
+        order=order,
+        amount=order.total_price,
+        status=Payment.Status.SUCCEEDED,
+        card_last4='4242',
+    )
+    order.status = Order.Status.PAID
+    order.save(update_fields=['status'])
+    return order
