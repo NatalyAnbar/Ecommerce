@@ -3,11 +3,15 @@ from rest_framework import permissions , status
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.db.models import F
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.response import Response
 from . import serializers , models
 from cart.models import Cart
-from django.db.models import F
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from payment.serializers import PaySerializer, PaymentSerializer
+from payment.gateway import charge_card
+from payment.models import Payment
+
 
 
 class OrderView(ReadOnlyModelViewSet):
@@ -26,13 +30,13 @@ class OrderView(ReadOnlyModelViewSet):
 
 
     @extend_schema(
-    summary='Create an order from the cart',
-    request=None,
-    responses={
-        201: serializers.OrderSerializer,
-        400: OpenApiResponse(description='Cart is empty or not enough stock.'),
+        summary='Create an order from the cart',
+        request=None,
+        responses={
+            201: serializers.OrderSerializer,
+            400: OpenApiResponse(description='Cart is empty or not enough stock.'),
         },
-        )
+    )
     @action(detail=False , methods=['post'])
     def checkout(self, request):
         """Turn the user's cart into a pending order and empty the cart."""
@@ -114,3 +118,64 @@ class OrderView(ReadOnlyModelViewSet):
             order.save(update_fields=['status'])
 
         return Response(serializers.OrderSerializer(order).data)
+
+
+    @extend_schema(
+        summary='Pay for a pending order',
+        request=PaySerializer,
+        responses={
+            201: PaymentSerializer,
+            400: OpenApiResponse(description='Invalid card number, or the order is not pending.'),
+            402: PaymentSerializer,
+            404: OpenApiResponse(description='Order not found.'),
+        },
+    )
+    @action(detail=True, methods=['post'])
+    def pay(self, request, pk=None):
+        """Pay for a pending order with a card, through the simulated gateway."""
+        
+        serializer = PaySerializer(data=request.data, context={'order_pk': pk})
+        serializer.is_valid(raise_exception=True)
+        card_number = serializer.validated_data['card_number']
+        
+        # All or nothing: a recorded payment and the order's status always agree
+        with transaction.atomic():
+            # Lock the order so two payments for it can't run at the same time
+            order = get_object_or_404(
+                models.Order.objects.select_for_update(),
+                pk=pk,
+                user=request.user,
+            )
+        
+            # Checked after the lock
+            if order.status != models.Order.Status.PENDING:
+                return Response(
+                    {'detail': 'Only pending orders can be paid.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                    )
+        
+            payment_status = charge_card(card_number)
+        
+            # Every attempt is recorded, declined ones included
+            payment = Payment.objects.create(
+                order=order,
+                amount=order.total_price,
+                status=payment_status,
+                # The full card number is never stored
+                card_last4=card_number[-4:],
+                )
+        
+            if payment_status == Payment.Status.SUCCEEDED:
+                order.status = models.Order.Status.PAID
+                order.save(update_fields=['status'])
+        
+        response_status = (
+            status.HTTP_201_CREATED
+            if payment_status == Payment.Status.SUCCEEDED
+            # 402 Payment Required: the card was declined, the order is still unpaid
+            else status.HTTP_402_PAYMENT_REQUIRED
+            )
+        return Response(PaymentSerializer(payment).data, status=response_status)
+
+                
+
