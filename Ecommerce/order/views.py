@@ -141,7 +141,11 @@ class OrderView(ReadOnlyModelViewSet):
         # All or nothing: a recorded payment and the order's status always agree
         with transaction.atomic():
             # Lock the order so two payments for it can't run at the same time
-            order = models.Order.objects.select_for_update().get(pk=pk, user=request.user)
+            order = get_object_or_404(
+                models.Order.objects.select_for_update(),
+                pk=pk,
+                user=request.user,
+            )
         
             # Checked after the lock
             if order.status != models.Order.Status.PENDING:
