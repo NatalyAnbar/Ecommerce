@@ -250,3 +250,14 @@ if not DEBUG:
 
 # Redirect http:// to https://. Turned on in production only, through the environment
 SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)
+
+
+# Where emails go: printed in the terminal by default; real SMTP in production
+EMAIL_BACKEND = env(
+    'EMAIL_BACKEND',
+    default='django.core.mail.backends.console.EmailBackend',
+)
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='no-reply@ecommerce.local')
+
+# Reset links stop working after one hour
+PASSWORD_RESET_TIMEOUT = 60 * 60
