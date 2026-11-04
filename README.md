@@ -1,7 +1,7 @@
 # E-Commerce REST API
 
 [![Tests](https://github.com/NatalyAnbar/Ecommerce/actions/workflows/tests.yml/badge.svg)](https://github.com/NatalyAnbar/Ecommerce/actions/workflows/tests.yml)
-![Tests count](https://img.shields.io/badge/tests-158%20passed-brightgreen)
+![Tests count](https://img.shields.io/badge/tests-177%20passed-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
 ![Django](https://img.shields.io/badge/Django-6.1-092E20)
 ![DRF](https://img.shields.io/badge/DRF-3.18-red)
@@ -49,7 +49,7 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 - **Strict image validation:** format, file size, dimensions, aspect ratio and a per-product limit
 - **Price snapshots:** each order stores the price paid, so later price changes never rewrite history
 - **Simulated payments:** a Stripe-style test gateway, every attempt recorded, and an order can never be charged twice
-- **158 tests** running on PostgreSQL in CI
+- **177 tests** running on PostgreSQL in CI
 
 <a id="features"></a>
 
@@ -335,7 +335,7 @@ docker compose up -d db
 pytest
 ```
 
-**158 tests** across every part of the project:
+**177 tests** across every part of the project:
 
 | Area | What is tested |
 |---|---|
