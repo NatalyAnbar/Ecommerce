@@ -92,6 +92,14 @@ class ProductSerializer(TranslationMixin, serializers.ModelSerializer):
     avg_rating = serializers.FloatField(read_only=True)
     reviews_count = serializers.IntegerField(read_only=True)
 
+    # Customers see whether a product is available, never the exact count
+    in_stock = serializers.SerializerMethodField()
+
+    extra_kwargs = {
+        # Staff set the stock; it's never shown in responses
+        'stock': {'write_only': True},
+        }
+
     class Meta:
         model = models.Product
         fields = [
@@ -100,6 +108,7 @@ class ProductSerializer(TranslationMixin, serializers.ModelSerializer):
             'description', 'description_en', 'description_ar',
             'uploaded_img', 'images',
             'avg_rating', 'reviews_count',
+            'stock', 'in_stock'
         ]
 
     def validate_uploaded_img(self, new_images):
@@ -140,6 +149,9 @@ class ProductSerializer(TranslationMixin, serializers.ModelSerializer):
 
     def get_description(self, obj) -> str:
         return self.resolve_translated_value(obj, 'description')
+
+    def get_in_stock(self, obj) -> bool:
+        return obj.stock > 0
 
 
 class CategorySerializer(TranslationMixin, serializers.ModelSerializer):

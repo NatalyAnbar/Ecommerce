@@ -24,6 +24,8 @@ ROLES = {
                           'view_productimage','add_productimage',
                           'change_productimage','delete_productimage'
                           ],
+    'Order Managers' : ['view_order','view_orderitem',
+                        'view_payment','view_user'],
 }
 
 
