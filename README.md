@@ -1,7 +1,7 @@
 # E-Commerce REST API
 
 [![Tests](https://github.com/NatalyAnbar/Ecommerce/actions/workflows/tests.yml/badge.svg)](https://github.com/NatalyAnbar/Ecommerce/actions/workflows/tests.yml)
-![Tests count](https://img.shields.io/badge/tests-150%20passed-brightgreen)
+![Tests count](https://img.shields.io/badge/tests-158%20passed-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
 ![Django](https://img.shields.io/badge/Django-6.1-092E20)
 ![DRF](https://img.shields.io/badge/DRF-3.18-red)
@@ -27,6 +27,7 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
   - [Reviews](#reviews)
   - [Cart](#cart)
   - [Orders and Stock](#orders-and-stock)
+  - [Payments](#payments)
   - [Roles and Permissions](#roles-and-permissions)
   - [Security and Rate Limiting](#security-and-rate-limiting)
 - [Design Decisions](#design-decisions)
@@ -47,7 +48,8 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 - **JWT with rotation and logout:** refresh tokens are rotated and blacklisted, and logout revokes them
 - **Strict image validation:** format, file size, dimensions, aspect ratio and a per-product limit
 - **Price snapshots:** each order stores the price paid, so later price changes never rewrite history
-- **150 tests** running on PostgreSQL in CI
+- **Simulated payments:** a Stripe-style test gateway, every attempt recorded, and an order can never be charged twice
+- **158 tests** running on PostgreSQL in CI
 
 <a id="features"></a>
 
@@ -140,6 +142,25 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 - Users can only list, view and cancel **their own orders**
 - Admin panel with order items shown inline and read-only, filters by status and date, and search by email
 
+<a id="payments"></a>
+
+### Payments
+
+- Pay for a pending order with `POST /orders/{id}/pay/`
+- A simulated gateway modelled on Stripe's test mode, kept in one file so a real provider can replace it
+- Test cards:
+
+| Card number | Result |
+|---|---|
+| `4242424242424242` | Succeeds, the order becomes `paid` (201) |
+| `4000000000000002` | Declined, the order stays `pending` (402) |
+| Any other number | Declined |
+
+- Every attempt is recorded, declined ones included, with the amount charged at that moment
+- Only the last four digits of the card are stored; the full number is never saved or returned
+- The order is locked while paying, and a database constraint allows only one successful payment per order
+- Paid orders can't be cancelled; payments are read-only in the admin
+
 <a id="roles-and-permissions"></a>
 
 ### Roles and Permissions
@@ -174,6 +195,8 @@ A few choices that are worth explaining:
 | One review per product in two places | The serializer gives a friendly error; the database constraint is the final guarantee. |
 | No id in `/me/` | The user comes from the token, which removes a whole class of access bugs. |
 | `PATCH` only for cart items and images | `PUT` would require resending the product or the image file just to change one field. |
+| Payment gateway in its own file | The rest of the app calls one function, so Stripe can replace the simulation without touching views or tests. |
+| Unique constraint only on successful payments | Declined attempts are unlimited, but the database itself refuses a second successful charge. |
 
 <a id="tech-stack"></a>
 
@@ -301,6 +324,7 @@ To try protected endpoints, log in, copy the `access` token, click **Authorize**
 | `GET` | `/orders/` | List my orders |
 | `GET` | `/orders/{id}/` | One order with its items and total |
 | `POST` | `/orders/{id}/cancel/` | Cancel a pending order and restore stock |
+| `POST` | `/orders/{id}/pay/` | Pay for a pending order with a card |
 
 <a id="running-tests"></a>
 
@@ -311,7 +335,7 @@ docker compose up -d db
 pytest
 ```
 
-**150 tests** across every part of the project:
+**158 tests** across every part of the project:
 
 | Area | What is tested |
 |---|---|
@@ -321,6 +345,7 @@ pytest
 | Reviews | one per user, owner-only changes |
 | Cart | guest and user carts, adding and merging quantities, the 100 limit, access to other carts, clear, merge |
 | Orders | checkout, empty cart, not enough stock, price snapshot, stock reduction, cancel and restore, access to other users' orders |
+| Payments | success, declined and unknown cards, retry after decline, paid and cancelled orders, invalid card numbers, other users' orders, one successful payment per order |
 
 Tests run automatically on every push and pull request with GitHub Actions, against a real PostgreSQL service. The workflow also fails if a model change is missing its migration.
 
