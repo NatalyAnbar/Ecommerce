@@ -26,7 +26,26 @@ def test_product_managers_role_has_expected_permissions():
     assert user.has_perm('store.change_category')
     assert not user.has_perm('store.delete_category')
 
-    
+
+def test_order_managers_role_has_expected_permissions():
+
+    """The Product Managers group grants catalog management except deleting categories."""
+
+    call_command('setup_roles')
+    user = baker.make(User)
+    group = Group.objects.get(name = 'Order Managers')
+    user.groups.add(group)
+
+    assert user.has_perm('order.view_order')
+    assert user.has_perm('order.view_orderitem')
+    assert user.has_perm('payment.view_payment')
+    assert user.has_perm('accounts.view_user')
+    # Can look, but never change
+    assert not user.has_perm('order.change_order')
+    assert not user.has_perm('order.delete_order')
+    assert not user.has_perm('payment.change_payment')
+    # And nothing outside orders
+    assert not user.has_perm('store.change_product')
 
 
 def test_regular_user_has_no_catalog_permissions():
