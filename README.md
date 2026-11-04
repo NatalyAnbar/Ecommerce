@@ -81,6 +81,7 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 - **Pagination** with a client-chosen page size, capped at 30: `?page_size=5`
 - **Average rating and review count** on every product, calculated in the database with `annotate()` so they are never out of date
 - Queries optimized with `select_related` and `prefetch_related` to avoid N+1 problems, with tests that check the number of queries
+- Staff set the stock; customers only see whether a product is `in_stock`, never the exact count
 
 <a id="product-images"></a>
 
@@ -166,8 +167,10 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 ### Roles and Permissions
 
 - Anyone can browse the catalog; changes require Django model permissions
-- A **Product Managers** group created by a management command (`setup_roles`) can manage products, categories and images, but can't delete categories
-- The command is safe to run many times and warns about missing permissions
+- Staff roles are created by a management command (`setup_roles`), safe to run many times; it warns about missing permissions
+- **Product Managers** manage products, categories and images, but can't delete categories
+- **Order Managers** (customer support) can view orders, payments and users, but can't change or delete anything
+- Orders are read-only in the admin: their status only changes through the API (checkout, cancel, pay), where the business rules live
 
 <a id="security-and-rate-limiting"></a>
 
@@ -197,6 +200,8 @@ A few choices that are worth explaining:
 | `PATCH` only for cart items and images | `PUT` would require resending the product or the image file just to change one field. |
 | Payment gateway in its own file | The rest of the app calls one function, so Stripe can replace the simulation without touching views or tests. |
 | Unique constraint only on successful payments | Declined attempts are unlimited, but the database itself refuses a second successful charge. |
+| Order status read-only in the admin | Editing it by hand could mark an order paid without a payment, or cancelled without restoring stock. |
+| Least-privilege staff roles | Each role gets only what its job needs: support staff can look up orders but never change them. |
 
 <a id="tech-stack"></a>
 
