@@ -1,5 +1,8 @@
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 from rest_framework import serializers
 from . import models
 
@@ -101,3 +104,51 @@ class ChangePasswordSerializer(serializers.Serializer):
         return instance
 
     
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(write_only=True)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """
+    Set a new password from a reset link.
+
+    The uid and token come from the emailed link; the client sends them
+    in the body together with the new password typed twice.
+    """
+
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    confirm_new_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+
+    def validate(self, attrs):
+        # One message for every link problem, so nobody learns which part was wrong
+        invalid_link = serializers.ValidationError('Invalid or expired link.')
+
+        # The uid tells us whose link this is
+        try:
+            user_pk = force_str(urlsafe_base64_decode(attrs['uid']))
+            user = models.User.objects.get(pk=user_pk)
+        except (TypeError, ValueError, OverflowError, models.User.DoesNotExist):
+            raise invalid_link
+
+        # The token proves the link is genuine, unused and not expired.
+        if not default_token_generator.check_token(user, attrs['token']):
+            raise invalid_link
+
+        # Both passwords match
+        if attrs['new_password'] != attrs['confirm_new_password']:
+            raise serializers.ValidationError(
+                {'confirm_new_password': 'The passwords do not match.'}
+            )
+
+        # Django's password rules, including similarity to this user's details
+        try:
+            validate_password(attrs['new_password'], user=user)
+        except ValidationError as error:
+            raise serializers.ValidationError({'new_password': list(error.messages)})
+
+        return attrs
+    
+
+
