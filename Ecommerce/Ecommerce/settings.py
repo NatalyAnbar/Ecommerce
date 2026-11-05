@@ -132,6 +132,7 @@ REST_FRAMEWORK = {
         'user': '1000/hour',
         # Custom scope for the login view: low enough to stop password guessing.
         'login': '5/minute',
+        'password_reset': '5/minute',
     },
 }
 
@@ -250,3 +251,22 @@ if not DEBUG:
 
 # Redirect http:// to https://. Turned on in production only, through the environment
 SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)
+
+
+# Where emails go: printed in the terminal by default; real SMTP in production
+MAILERS = {
+    'default': {
+        'BACKEND': env(
+            'EMAIL_BACKEND',
+            default='django.core.mail.backends.console.EmailBackend',
+        ),
+    },
+}
+
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='no-reply@ecommerce.local')
+
+# Reset links stop working after one hour
+PASSWORD_RESET_TIMEOUT = 60 * 60
+
+# The frontend page that reads uid and token from the link and calls the confirm endpoint
+PASSWORD_RESET_URL = env('PASSWORD_RESET_URL', default='http://localhost:3000/reset-password')

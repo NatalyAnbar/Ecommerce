@@ -10,11 +10,11 @@ rouetr.register('register',views.RegisterUser,basename='register')
 urlpatterns = [
     path('',include(rouetr.urls)),
 
-
     path('login/',views.LoginView.as_view(),name='login'),
     path('refreshtoken/',TokenRefreshView.as_view(),name='refresh'),
     path('logout/',TokenBlacklistView.as_view(),name='logout'),
-
+    path('password-reset/',views.PasswordResetRequestView.as_view(),name='password_reset'),
+    path('password-reset/confirm/',views.ResetPasswordView.as_view(),name='password_reset_confirm'),
 
     # A single URL with no id: the user comes from the token
     path('me/',views.MeView.as_view(),name='me'),
