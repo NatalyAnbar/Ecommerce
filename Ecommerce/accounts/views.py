@@ -12,7 +12,6 @@ class RegisterUser(mixins.CreateModelMixin , GenericViewSet):
     read or change other users.
     """
     
-    queryset = models.User.objects.all()
     serializer_class = Serializers.RegisterSerializer
     # Visitors sign up before they have an account, so this must stay open
     permission_classes = [permissions.AllowAny]
