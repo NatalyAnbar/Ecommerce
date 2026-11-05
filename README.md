@@ -1,7 +1,7 @@
 # E-Commerce REST API
 
 [![Tests](https://github.com/NatalyAnbar/Ecommerce/actions/workflows/tests.yml/badge.svg)](https://github.com/NatalyAnbar/Ecommerce/actions/workflows/tests.yml)
-![Tests count](https://img.shields.io/badge/tests-177%20passed-brightgreen)
+![Tests count](https://img.shields.io/badge/tests-197%20passed-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
 ![Django](https://img.shields.io/badge/Django-6.1-092E20)
 ![DRF](https://img.shields.io/badge/DRF-3.18-red)
@@ -49,7 +49,8 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 - **Strict image validation:** format, file size, dimensions, aspect ratio and a per-product limit
 - **Price snapshots:** each order stores the price paid, so later price changes never rewrite history
 - **Simulated payments:** a Stripe-style test gateway, every attempt recorded, and an order can never be charged twice
-- **177 tests** running on PostgreSQL in CI
+- **Password reset by email:** single-use links that expire in an hour, no way to tell which emails have an account, and a logout from every device
+- **197 tests** running on PostgreSQL in CI
 
 <a id="features"></a>
 
@@ -67,6 +68,12 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 - **Logout** that blacklists the refresh token
 - **Profile** endpoint (`/me/`) with no id in the URL: the user always comes from the token, so nobody can read another user's profile
 - **Change password** with the old password required, and the new one checked against the same rules
+- **Forgotten password:** request a reset link by email, then set a new password with it
+  - The same answer for every email, so nobody can learn which emails have an account
+  - Links are signed, work once, and expire after one hour; nothing about them is stored
+  - The new password follows the same rules as sign-up
+  - Resetting logs the user out of every device by blacklisting all their refresh tokens
+  - Both endpoints are limited to 5 requests per minute
 
 <a id="catalog"></a>
 
@@ -202,6 +209,7 @@ A few choices that are worth explaining:
 | Unique constraint only on successful payments | Declined attempts are unlimited, but the database itself refuses a second successful charge. |
 | Order status read-only in the admin | Editing it by hand could mark an order paid without a payment, or cancelled without restoring stock. |
 | Least-privilege staff roles | Each role gets only what its job needs: support staff can look up orders but never change them. |
+| Password reset | emails sent only for real accounts, identical responses, rate limiting, single-use and expired links, forged or mixed-up uid and token, password rules, logout from every device, the full flow from email to login |
 
 <a id="tech-stack"></a>
 
@@ -267,6 +275,9 @@ python manage.py runserver
 | `ALLOWED_HOSTS` | Comma-separated hosts, e.g. `localhost,127.0.0.1` |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Used by the PostgreSQL container |
 | `DATABASE_URL` | e.g. `postgres://user:password@127.0.0.1:5432/dbname` |
+| `EMAIL_BACKEND` | Where emails go; prints them in the terminal by default |
+| `DEFAULT_FROM_EMAIL` | The sender address of every email |
+| `PASSWORD_RESET_URL` | The frontend page reset links point to; it reads `uid` and `token` from the link |
 
 <a id="api-documentation"></a>
 
@@ -296,6 +307,8 @@ To try protected endpoints, log in, copy the `access` token, click **Authorize**
 | `POST` | `/accounts/logout/` | Blacklist the refresh token |
 | `GET` `PATCH` | `/accounts/me/` | Read or update my profile |
 | `PUT` | `/accounts/change_password/` | Change my password |
+| `POST` | `/accounts/password-reset/` | Email a reset link (same answer whether or not the account exists) |
+| `POST` | `/accounts/password-reset/confirm/` | Set a new password with the uid and token from the link |
 
 ### Catalog
 
@@ -340,7 +353,7 @@ docker compose up -d db
 pytest
 ```
 
-**177 tests** across every part of the project:
+**197 tests** across every part of the project:
 
 | Area | What is tested |
 |---|---|
