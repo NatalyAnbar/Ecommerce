@@ -6,7 +6,7 @@ from django.db import transaction
 from django.db.models import F
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.response import Response
-from . import serializers , models
+from . import serializers, models, emails 
 from cart.models import Cart
 from payment.serializers import PaySerializer, PaymentSerializer
 from payment.gateway import charge_card
@@ -83,6 +83,7 @@ class OrderView(ReadOnlyModelViewSet):
                 models.Product.objects.filter(id=item.product.id).update(stock=F('stock')-item.quantity)
 
             user_cart.clear_cart()
+            transaction.on_commit(lambda: emails.send_order_created_email(order))
 
         return Response(serializers.OrderSerializer(order).data ,
                          status=status.HTTP_201_CREATED)
@@ -116,6 +117,8 @@ class OrderView(ReadOnlyModelViewSet):
                 models.Product.objects.filter(id=item.product.id).update(stock=F('stock') + item.quantity)
             order.status = models.Order.Status.CANCELLED
             order.save(update_fields=['status'])
+
+            transaction.on_commit(lambda: emails.send_order_cancelled_email(order))
 
         return Response(serializers.OrderSerializer(order).data)
 
@@ -168,6 +171,8 @@ class OrderView(ReadOnlyModelViewSet):
             if payment_status == Payment.Status.SUCCEEDED:
                 order.status = models.Order.Status.PAID
                 order.save(update_fields=['status'])
+
+            transaction.on_commit(lambda: emails.send_payment_received_email(payment))
         
         response_status = (
             status.HTTP_201_CREATED
