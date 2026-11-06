@@ -171,9 +171,8 @@ class OrderView(ReadOnlyModelViewSet):
             if payment_status == Payment.Status.SUCCEEDED:
                 order.status = models.Order.Status.PAID
                 order.save(update_fields=['status'])
-
-            transaction.on_commit(lambda: emails.send_payment_received_email(payment))
-        
+                transaction.on_commit(lambda: emails.send_payment_received_email(payment))
+                
         response_status = (
             status.HTTP_201_CREATED
             if payment_status == Payment.Status.SUCCEEDED
