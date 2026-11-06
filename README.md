@@ -1,7 +1,7 @@
 # E-Commerce REST API
 
 [![Tests](https://github.com/NatalyAnbar/Ecommerce/actions/workflows/tests.yml/badge.svg)](https://github.com/NatalyAnbar/Ecommerce/actions/workflows/tests.yml)
-![Tests count](https://img.shields.io/badge/tests-197%20passed-brightgreen)
+![Tests count](https://img.shields.io/badge/tests-206%20passed-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
 ![Django](https://img.shields.io/badge/Django-6.1-092E20)
 ![DRF](https://img.shields.io/badge/DRF-3.18-red)
@@ -10,6 +10,7 @@
 
 **Live:** [Swagger UI](https://ecommerce-api-xl6n.onrender.com/api/docs/) · [ReDoc](https://ecommerce-api-xl6n.onrender.com/api/redoc/)
    (Free hosting: the first request after a while may take about a minute while the server wakes up.)*
+   (On the live demo, emails are written to the server logs: Render's free plan blocks outbound SMTP.)*
 
 A complete backend for an online store, built with Django REST Framework.
 
@@ -50,7 +51,7 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 - **Price snapshots:** each order stores the price paid, so later price changes never rewrite history
 - **Simulated payments:** a Stripe-style test gateway, every attempt recorded, and an order can never be charged twice
 - **Password reset by email:** single-use links that expire in an hour, no way to tell which emails have an account, and a logout from every device
-- **197 tests** running on PostgreSQL in CI
+- **206 tests** running on PostgreSQL in CI
 
 <a id="features"></a>
 
@@ -149,6 +150,8 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 - **Cancel** a pending order, which returns its items to stock in one transaction; other statuses return `400`
 - Users can only list, view and cancel **their own orders**
 - Admin panel with order items shown inline and read-only, filters by status and date, and search by email
+- Customers get an email when an order is placed, paid or cancelled
+- Emails are sent only after the database transaction commits, so a failed checkout never sends one, and a failed email never undoes an order
 
 <a id="payments"></a>
 
@@ -353,7 +356,7 @@ docker compose up -d db
 pytest
 ```
 
-**197 tests** across every part of the project:
+**206 tests** across every part of the project:
 
 | Area | What is tested |
 |---|---|
