@@ -15,6 +15,8 @@ urlpatterns = [
     path('logout/',TokenBlacklistView.as_view(),name='logout'),
     path('password-reset/',views.PasswordResetRequestView.as_view(),name='password_reset'),
     path('password-reset/confirm/',views.ResetPasswordView.as_view(),name='password_reset_confirm'),
+    path('google/',views.GoogleLoginView.as_view(),name='google_login'),
+
 
     # A single URL with no id: the user comes from the token
     path('me/',views.MeView.as_view(),name='me'),

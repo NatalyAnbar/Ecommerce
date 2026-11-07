@@ -133,6 +133,7 @@ REST_FRAMEWORK = {
         # Custom scope for the login view: low enough to stop password guessing.
         'login': '5/minute',
         'password_reset': '5/minute',
+        'google_login' : '10/minute'
     },
 }
 
@@ -270,3 +271,7 @@ PASSWORD_RESET_TIMEOUT = 60 * 60
 
 # The frontend page that reads uid and token from the link and calls the confirm endpoint
 PASSWORD_RESET_URL = env('PASSWORD_RESET_URL', default='http://localhost:3000/reset-password')
+
+
+# Google Sign-In: ID tokens must be issued for this client (checked as `aud`)
+GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')

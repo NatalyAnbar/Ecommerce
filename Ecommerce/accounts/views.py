@@ -4,8 +4,10 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
-from . import emails, models,Serializers
 from django.db import transaction
+from rest_framework_simplejwt.tokens import RefreshToken
+from . import emails, models,Serializers
+
 
 class RegisterUser(mixins.CreateModelMixin , GenericViewSet):
     """
@@ -123,7 +125,46 @@ class ResetPasswordView(generics.GenericAPIView):
         )
 
 
+class GoogleLoginView(generics.GenericAPIView):
+    """Log in or sign up with a Google ID token; returns our own JWT pair."""
+    
+    permission_classes = [permissions.AllowAny]
+    serializer_class = Serializers.GoogleLoginSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'google_login'
+
+    def post(self, request):
+        serializer = Serializers.GoogleLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        first_name = serializer.validated_data.get('first_name')
+        last_name = serializer.validated_data.get('last_name')
+
+        user, created = models.User.objects.get_or_create(
+            email__iexact=email,
+            defaults={
+                'email':email.lower(),
+                'first_name':first_name,
+                'last_name':last_name 
+            }
+        )
+        if created:
+            user.set_unusable_password()
+            user.save(update_fields=['password'])
+        if not user.is_active:
+            return Response(
+                {'detail': 'This account is disabled.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        refresh_token = RefreshToken.for_user(user)
+        access_token = refresh_token.access_token
+        return Response(
+            {'access': str(access_token), 'refresh': str(refresh_token)},
+            status=status.HTTP_200_OK,
+        )
         
-        
+            
+
 
 

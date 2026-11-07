@@ -1,10 +1,15 @@
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
-from django.contrib.auth.tokens import default_token_generator
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 from rest_framework import serializers
+
 from . import models
+
 
 class RegisterSerializer(serializers.ModelSerializer):
 
@@ -151,4 +156,28 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         return attrs
     
 
+class GoogleLoginSerializer(serializers.Serializer):
+    """Check a Google ID token and pass on the user's email and name."""
+    
+    id_token = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        try:
+            # Checks Google's signature, expiry (exp), issuer (iss) and that
+            # the token was issued for our app (aud)
+            google_info = id_token.verify_oauth2_token(
+                attrs['id_token'],
+                google_requests.Request(),
+                audience=settings.GOOGLE_CLIENT_ID,
+            )
+        except ValueError:
+            raise serializers.ValidationError({'id_token': 'Invalid Google token.'})
+
+        if not google_info.get('email_verified'):
+            raise serializers.ValidationError({'id_token': 'Google email is not verified.'})
+
+        attrs['email'] = google_info['email']
+        attrs['first_name'] = google_info.get('given_name','')
+        attrs['last_name'] = google_info.get('family_name','')
+        return attrs
 
