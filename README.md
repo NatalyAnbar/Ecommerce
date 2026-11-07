@@ -1,7 +1,7 @@
 # E-Commerce REST API
 
 [![Tests](https://github.com/NatalyAnbar/Ecommerce/actions/workflows/tests.yml/badge.svg)](https://github.com/NatalyAnbar/Ecommerce/actions/workflows/tests.yml)
-![Tests count](https://img.shields.io/badge/tests-206%20passed-brightgreen)
+![Tests count](https://img.shields.io/badge/tests-221%20passed-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
 ![Django](https://img.shields.io/badge/Django-6.1-092E20)
 ![DRF](https://img.shields.io/badge/DRF-3.18-red)
@@ -51,7 +51,8 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 - **Price snapshots:** each order stores the price paid, so later price changes never rewrite history
 - **Simulated payments:** a Stripe-style test gateway, every attempt recorded, and an order can never be charged twice
 - **Password reset by email:** single-use links that expire in an hour, no way to tell which emails have an account, and a logout from every device
-- **206 tests** running on PostgreSQL in CI
+- **Sign in with Google:** the Google ID token is verified (signature, expiry, issuer and audience), and the user gets the API's own JWT pair
+- **221 tests** running on PostgreSQL in CI
 
 <a id="features"></a>
 
@@ -75,6 +76,14 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
   - The new password follows the same rules as sign-up
   - Resetting logs the user out of every device by blacklisting all their refresh tokens
   - Both endpoints are limited to 5 requests per minute
+  - **Sign in with Google** (OpenID Connect)
+  - The frontend sends the Google ID token; the API verifies Google's signature, the expiry, the issuer, and that the token was issued for this app (`GOOGLE_CLIENT_ID`)
+  - Only verified Google emails are accepted
+  - A first sign-in creates the account with no usable password; the user can set one later with "forgot password"
+  - Existing accounts are matched by email, case-insensitively
+  - Disabled accounts are refused, so Google can't be used as a way back in
+  - Returns the API's own access and refresh tokens, so the rest of the API works the same as after a normal login
+  - Limited to 10 requests per minute
 
 <a id="catalog"></a>
 
@@ -191,6 +200,7 @@ The project is tested with **150 automated tests**, runs on **PostgreSQL in Dock
 - Secrets and database settings come from environment variables (`.env`), never from the code
 - `DEBUG` is off unless the environment turns it on
 - Admin flags like `is_staff` can't be set through registration
+- **Google sign-in is limited to 10 requests per minute**
 
 <a id="design-decisions"></a>
 
@@ -212,7 +222,9 @@ A few choices that are worth explaining:
 | Unique constraint only on successful payments | Declined attempts are unlimited, but the database itself refuses a second successful charge. |
 | Order status read-only in the admin | Editing it by hand could mark an order paid without a payment, or cancelled without restoring stock. |
 | Least-privilege staff roles | Each role gets only what its job needs: support staff can look up orders but never change them. |
-| Password reset | emails sent only for real accounts, identical responses, rate limiting, single-use and expired links, forged or mixed-up uid and token, password rules, logout from every device, the full flow from email to login |
+| Our own JWT after Google sign-in | Google proves who the user is once; after that the API controls the session (rotation, blacklist, logout) the same way for every user. |
+| `aud` checked against `GOOGLE_CLIENT_ID` | A real Google token made for another site must not open an account here. |
+
 
 <a id="tech-stack"></a>
 
@@ -281,6 +293,7 @@ python manage.py runserver
 | `EMAIL_BACKEND` | Where emails go; prints them in the terminal by default |
 | `DEFAULT_FROM_EMAIL` | The sender address of every email |
 | `PASSWORD_RESET_URL` | The frontend page reset links point to; it reads `uid` and `token` from the link |
+| `GOOGLE_CLIENT_ID` | The OAuth client ID from Google Cloud; Google ID tokens must be issued for it |
 
 <a id="api-documentation"></a>
 
@@ -312,6 +325,7 @@ To try protected endpoints, log in, copy the `access` token, click **Authorize**
 | `PUT` | `/accounts/change_password/` | Change my password |
 | `POST` | `/accounts/password-reset/` | Email a reset link (same answer whether or not the account exists) |
 | `POST` | `/accounts/password-reset/confirm/` | Set a new password with the uid and token from the link |
+| `POST` | `/accounts/google/` | Sign in or sign up with a Google ID token; returns access and refresh tokens |
 
 ### Catalog
 
@@ -356,7 +370,7 @@ docker compose up -d db
 pytest
 ```
 
-**206 tests** across every part of the project:
+**221 tests** across every part of the project:
 
 | Area | What is tested |
 |---|---|
@@ -367,6 +381,8 @@ pytest
 | Cart | guest and user carts, adding and merging quantities, the 100 limit, access to other carts, clear, merge |
 | Orders | checkout, empty cart, not enough stock, price snapshot, stock reduction, cancel and restore, access to other users' orders |
 | Payments | success, declined and unknown cards, retry after decline, paid and cancelled orders, invalid card numbers, other users' orders, one successful payment per order |
+| Password reset | emails sent only for real accounts, identical responses, rate limiting, single-use and expired links, forged or mixed-up uid and token, password rules, logout from every device, the full flow from email to login |
+| Google sign-in | new and existing users, case-insensitive emails, no usable password for new accounts, invalid tokens, unverified emails, disabled accounts, the audience check, rate limiting; Google is mocked, so no test calls it |
 
 Tests run automatically on every push and pull request with GitHub Actions, against a real PostgreSQL service. The workflow also fails if a model change is missing its migration.
 
