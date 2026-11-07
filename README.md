@@ -391,16 +391,28 @@ Tests run automatically on every push and pull request with GitHub Actions, agai
 ## Project Structure
 
 ```
-Ecommerce/
-├── accounts/        # custom user, registration, JWT login, refresh, logout, profile
-├── store/           # categories, products, images, reviews, filters, pagination, roles command
-├── cart/            # guest and user carts, cart items, merge
-├── order/           # orders, checkout, cancellation, stock
-├── Ecommerce/       # settings, URLs, language middleware
-├── conftest.py      # shared test fixtures
-├── Dockerfile
-├── docker-compose.yml
-└── requirements.txt
+.
+├── .github/
+│   └── workflows/
+│       └── tests.yml      # GitHub Actions: lint-free migrations check and tests on PostgreSQL for every push and PR
+├── README.md
+└── Ecommerce/
+    ├── accounts/          # custom user, registration, JWT login, refresh, logout, profile,
+    │                      # change password, password reset by email, sign in with Google
+    ├── store/             # categories, products, images, reviews, filters, pagination, roles command
+    ├── cart/              # guest and user carts, cart items, merge
+    ├── order/             # orders, checkout, cancellation, stock, order emails
+    ├── payment/           # payments, simulated card gateway
+    ├── Ecommerce/         # settings, URLs, language middleware
+    ├── conftest.py        # shared test fixtures
+    ├── pytest.ini
+    ├── manage.py
+    ├── Dockerfile
+    ├── .dockerignore
+    ├── docker-compose.yml # web + PostgreSQL for local development
+    ├── start.sh           # production start: migrate, collectstatic, gunicorn
+    ├── .env.example       # every environment variable, without real values
+    └── requirements.txt
 ```
 
 ## Author
